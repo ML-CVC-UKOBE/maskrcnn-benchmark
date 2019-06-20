@@ -7,6 +7,27 @@ from maskrcnn_benchmark.modeling import registry
 from maskrcnn_benchmark.modeling.make_layers import conv_with_kaiming_uniform
 from . import fpn as fpn_module
 from . import resnet
+from . import efficientnet
+
+
+@registry.BACKBONES.register("E-B0")
+@registry.BACKBONES.register("E-B1")
+@registry.BACKBONES.register("E-B2")
+@registry.BACKBONES.register("E-B3")
+@registry.BACKBONES.register("E-B4")
+@registry.BACKBONES.register("E-B5")
+@registry.BACKBONES.register("E-B6")
+@registry.BACKBONES.register("E-B7")
+def build_efficientnet_backbone(cfg):
+
+    # TODO map names to 'model names: i.e E-B3->efficientnet-b3
+    body = efficientnet.EfficientNet.from_name('efficientnet-b3')
+    del body._conv_head
+    del body._bn1
+    del body._fc
+    model = nn.Sequential(OrderedDict([("body", body)]))
+    model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    return model
 
 
 @registry.BACKBONES.register("R-50-C4")

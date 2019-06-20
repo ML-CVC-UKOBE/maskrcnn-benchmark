@@ -194,7 +194,7 @@ class ResNetHead(nn.Module):
                 dcn_config=dcn_config
             )
             stride = None
-            self.add_module(name, module)
+            self.add_module(name, module) # this adds a BottleneckWithFixedBatchNorm module to the resnet
             self.stages.append(name)
         self.out_channels = out_channels
 
