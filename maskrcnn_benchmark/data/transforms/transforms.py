@@ -73,6 +73,7 @@ class RandomHorizontalFlip(object):
             target = target.transpose(0)
         return image, target
 
+
 class RandomVerticalFlip(object):
     def __init__(self, prob=0.5):
         self.prob = prob
@@ -82,6 +83,7 @@ class RandomVerticalFlip(object):
             image = F.vflip(image)
             target = target.transpose(1)
         return image, target
+
 
 class ColorJitter(object):
     def __init__(self,

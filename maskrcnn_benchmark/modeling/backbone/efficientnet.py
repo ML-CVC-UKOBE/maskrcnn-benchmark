@@ -12,6 +12,8 @@ from .efficientnet_utils import (
     efficientnet_params,
     load_pretrained_weights,
 )
+from maskrcnn_benchmark.layers import FrozenBatchNorm2d
+
 
 class MBConvBlock(nn.Module):
     """
@@ -39,6 +41,8 @@ class MBConvBlock(nn.Module):
         if self._block_args.expand_ratio != 1:
             self._expand_conv = Conv2dSamePadding(in_channels=inp, out_channels=oup, kernel_size=1, bias=False)
             self._bn0 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+            # self._bn0 = nn.SyncBatchNorm(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+            # self._bn0 = FrozenBatchNorm2d(oup)
 
         # Depthwise convolution phase
         k = self._block_args.kernel_size
@@ -47,6 +51,8 @@ class MBConvBlock(nn.Module):
             in_channels=oup, out_channels=oup, groups=oup,  # groups makes it depthwise
             kernel_size=k, stride=s, bias=False)
         self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+        # self._bn1 = nn.SyncBatchNorm(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+        # self._bn1 = FrozenBatchNorm2d(oup)
 
         # Squeeze and Excitation layer, if desired
         if self.has_se:
@@ -58,6 +64,8 @@ class MBConvBlock(nn.Module):
         final_oup = self._block_args.output_filters
         self._project_conv = Conv2dSamePadding(in_channels=oup, out_channels=final_oup, kernel_size=1, bias=False)
         self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._bn_mom, eps=self._bn_eps)
+        # self._bn2 = nn.SyncBatchNorm(num_features=final_oup, momentum=self._bn_mom, eps=self._bn_eps)
+        # self._bn2 = FrozenBatchNorm2d(final_oup)
 
     def forward(self, inputs, drop_connect_rate=None):
         """
@@ -102,7 +110,7 @@ class EfficientNet(nn.Module):
 
     """
 
-    def __init__(self, blocks_args=None, global_params=None):
+    def __init__(self, cfg, blocks_args=None, global_params=None):
         super().__init__()
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
@@ -118,6 +126,8 @@ class EfficientNet(nn.Module):
         out_channels = round_filters(32, self._global_params)  # number of output channels
         self._conv_stem = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
         self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn0 = nn.SyncBatchNorm(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn0 = FrozenBatchNorm2d(out_channels)
 
         # Build blocks
         self._blocks = nn.ModuleList([])
@@ -142,10 +152,27 @@ class EfficientNet(nn.Module):
         out_channels = round_filters(1280, self._global_params)
         self._conv_head = Conv2dSamePadding(in_channels, out_channels, kernel_size=1, bias=False)
         self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn1 = nn.SyncBatchNorm(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn1 = FrozenBatchNorm2d(out_channels)
 
         # Final linear layer
         self._dropout = self._global_params.dropout_rate
         self._fc = nn.Linear(out_channels, self._global_params.num_classes)
+
+        # Optionally freeze (requires_grad=False) parts of the backbone
+        self._freeze_backbone(cfg.MODEL.BACKBONE.FREEZE_CONV_BODY_AT)
+
+    def _freeze_backbone(self, freeze_at):
+        if freeze_at < 0:
+            return
+        for stage_index in range(freeze_at):
+            if stage_index == 0:
+                m = self._conv_stem  # stage 0 is the stem
+            else:
+                # m = getattr(self, "layer" + str(stage_index))
+                m = self._blocks[freeze_at - 1]
+            for p in m.parameters():
+                p.requires_grad = False
 
     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
@@ -158,7 +185,10 @@ class EfficientNet(nn.Module):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
-            x = block(x) # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
+            # CREO Q LO HAN CAMBIADO YA....
+            # x = block(x)  # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
+            x = block(x, drop_connect_rate)  # see https://github.com/tensorflow/tpu/issues/381
+
 
         return x
 
@@ -169,25 +199,26 @@ class EfficientNet(nn.Module):
         outputs = []
         x = self.extract_features(inputs)
 
-        '''
-        # Head
-        x = relu_fn(self._bn1(self._conv_head(x)))
-        x = F.adaptive_avg_pool2d(x, 1).squeeze(-1).squeeze(-1)
-        if self._dropout:
-            x = F.dropout(x, p=self._dropout, training=self.training)
-        x = self._fc(x)
-        '''
+
+        # # Head
+        # x = relu_fn(self._bn1(self._conv_head(x)))
+        # x = F.adaptive_avg_pool2d(x, 1).squeeze(-1).squeeze(-1)
+        # if self._dropout:
+        #     x = F.dropout(x, p=self._dropout, training=self.training)
+        # x = self._fc(x)
+
         outputs.append(x)
         return outputs
+
     @classmethod
-    def from_name(cls, model_name, override_params=None):
+    def from_name(cls, cfg, model_name, override_params=None):
         cls._check_model_name_is_valid(model_name)
         blocks_args, global_params = get_model_params(model_name, override_params)
-        return EfficientNet(blocks_args, global_params)
+        return EfficientNet(cfg, blocks_args, global_params)
 
     @classmethod
     def from_pretrained(cls, model_name):
-        model = EfficientNet.from_name(model_name)
+        model = EfficientNet.from_name({}, model_name)
         load_pretrained_weights(model, model_name)
         return model
 

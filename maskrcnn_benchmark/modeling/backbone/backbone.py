@@ -19,9 +19,15 @@ from . import efficientnet
 @registry.BACKBONES.register("E-B6")
 @registry.BACKBONES.register("E-B7")
 def build_efficientnet_backbone(cfg):
-
-    # TODO map names to 'model names: i.e E-B3->efficientnet-b3
-    body = efficientnet.EfficientNet.from_name('efficientnet-b3')
+    name = 'efficientnet-b3'
+    if cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B0":
+        name = 'efficientnet-b0'
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B4":
+        name = 'efficientnet-b4'
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B5":
+        name = 'efficientnet-b5'
+    # print(name)
+    body = efficientnet.EfficientNet.from_name(cfg, model_name=name)
     del body._conv_head
     del body._bn1
     del body._fc
