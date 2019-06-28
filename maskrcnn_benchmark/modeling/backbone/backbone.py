@@ -33,6 +33,7 @@ def build_efficientnet_backbone(cfg):
     del body._fc
     model = nn.Sequential(OrderedDict([("body", body)]))
     model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    print(model)
     return model
 
 

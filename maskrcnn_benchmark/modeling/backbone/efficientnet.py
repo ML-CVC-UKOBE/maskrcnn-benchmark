@@ -15,6 +15,25 @@ from .efficientnet_utils import (
 from maskrcnn_benchmark.layers import FrozenBatchNorm2d
 
 
+class StemBlock(nn.Module):
+    def __init__(self, global_params):
+        super().__init__()
+        self._global_params = global_params
+
+        bn_mom = 1 - self._global_params.batch_norm_momentum
+        bn_eps = self._global_params.batch_norm_epsilon
+
+        # Stem
+        in_channels = 3  # rgb
+        out_channels = round_filters(32, self._global_params)  # number of output channels
+        self._conv = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
+        self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+
+    def forward(self, inputs):
+        x = relu_fn(self._bn0(self._conv(inputs)))
+        return x
+
+
 class MBConvBlock(nn.Module):
     """
     Mobile Inverted Residual Bottleneck Block
@@ -122,12 +141,15 @@ class EfficientNet(nn.Module):
         bn_eps = self._global_params.batch_norm_epsilon
 
         # Stem
-        in_channels = 3  # rgb
-        out_channels = round_filters(32, self._global_params)  # number of output channels
-        self._conv_stem = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
-        self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # in_channels = 3  # rgb
+        # out_channels = round_filters(32, self._global_params)  # number of output channels
+        # self._stem = nn.ModuleList([])
+        # self._stem.append(Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False))
+        # self._stem.append(nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps))
         # self._bn0 = nn.SyncBatchNorm(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
         # self._bn0 = FrozenBatchNorm2d(out_channels)
+
+        self._stem = StemBlock(self._global_params)
 
         # Build blocks
         self._blocks = nn.ModuleList([])
@@ -167,7 +189,7 @@ class EfficientNet(nn.Module):
             return
         for stage_index in range(freeze_at):
             if stage_index == 0:
-                m = self._conv_stem  # stage 0 is the stem
+                m = self._stem  # stage 0 is the stem
             else:
                 # m = getattr(self, "layer" + str(stage_index))
                 m = self._blocks[freeze_at - 1]
@@ -178,7 +200,7 @@ class EfficientNet(nn.Module):
         """ Returns output of the final convolution layer """
 
         # Stem
-        x = relu_fn(self._bn0(self._conv_stem(inputs)))
+        x = self._stem(inputs)
 
         # Blocks
         for idx, block in enumerate(self._blocks):
@@ -188,7 +210,6 @@ class EfficientNet(nn.Module):
             # CREO Q LO HAN CAMBIADO YA....
             # x = block(x)  # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
             x = block(x, drop_connect_rate)  # see https://github.com/tensorflow/tpu/issues/381
-
 
         return x
 
