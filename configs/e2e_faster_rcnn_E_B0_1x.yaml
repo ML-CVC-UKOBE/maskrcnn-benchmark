@@ -1,13 +1,11 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
-  WEIGHT: "http://storage.googleapis.com/public-models/efficientnet-b3-c8376fa2.pth"
-  #ROI_BOX_HEAD:
-  #    FEATURE_EXTRACTOR: "EfficientNetROIFeatureExtractor"
+  WEIGHT: "http://storage.googleapis.com/public-models/efficientnet-b0-08094119.pth"
   BACKBONE:
-      CONV_BODY: 'E-B3'
+      CONV_BODY: 'E-B0'
   RESNETS:
-    BACKBONE_OUT_CHANNELS: 384
-    RES2_OUT_CHANNELS: 96
+    BACKBONE_OUT_CHANNELS: 320
+    RES2_OUT_CHANNELS: 80
   RPN:
     PRE_NMS_TOP_N_TRAIN: 6000
     PRE_NMS_TOP_N_TEST: 1000
