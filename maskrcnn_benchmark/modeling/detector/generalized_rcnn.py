@@ -78,7 +78,7 @@ class GeneralizedRCNN(nn.Module):
                     img, tuple(top_left), tuple(bottom_right), tuple(color), 1
                 )
             cv2.imshow("boxes", img)
-            cv2.waitKey(0)
+            cv2.waitKey(10)
 
 
         if self.roi_heads:
