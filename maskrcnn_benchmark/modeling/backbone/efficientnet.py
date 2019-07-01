@@ -26,11 +26,11 @@ class StemBlock(nn.Module):
         # Stem
         in_channels = 3  # rgb
         out_channels = round_filters(32, self._global_params)  # number of output channels
-        self._conv = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
+        self._conv_stem = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
         self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
     def forward(self, inputs):
-        x = relu_fn(self._bn0(self._conv(inputs)))
+        x = relu_fn(self._bn0(self._conv_stem(inputs)))
         return x
 
 

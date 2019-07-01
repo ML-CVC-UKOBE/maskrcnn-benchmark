@@ -39,14 +39,17 @@ def build_efficientnet_backbone(cfg):
         block_to_remove_stride = 27
     else:
         raise NotImplementedError
-    # print(name)
+
     body = efficientnet.EfficientNet.from_name(cfg, model_name=name)
+
     del body._conv_head
     del body._bn1
     del body._fc
-    body._blocks[block_to_remove_stride]._depthwise_conv.stride = [1, 1]  # B0
+    body._blocks[block_to_remove_stride]._depthwise_conv.stride = [1, 1]
+
     model = nn.Sequential(OrderedDict([("body", body)]))
     model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+
     return model
 
 
