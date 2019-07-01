@@ -19,18 +19,32 @@ from . import efficientnet
 @registry.BACKBONES.register("E-B6")
 @registry.BACKBONES.register("E-B7")
 def build_efficientnet_backbone(cfg):
-    name = 'efficientnet-b3'
     if cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B0":
         name = 'efficientnet-b0'
+        block_to_remove_stride = 11
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B1":
+        name = 'efficientnet-b1'
+        block_to_remove_stride = 16
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B2":
+        name = 'efficientnet-b2'
+        block_to_remove_stride = 16
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B3":
+        name = 'efficientnet-b3'
+        block_to_remove_stride = 18
     elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B4":
         name = 'efficientnet-b4'
+        block_to_remove_stride = 22
     elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B5":
         name = 'efficientnet-b5'
+        block_to_remove_stride = 27
+    else:
+        raise NotImplementedError
     # print(name)
     body = efficientnet.EfficientNet.from_name(cfg, model_name=name)
     del body._conv_head
     del body._bn1
     del body._fc
+    body._blocks[block_to_remove_stride]._depthwise_conv.stride = [1, 1]  # B0
     model = nn.Sequential(OrderedDict([("body", body)]))
     model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
     print(model)

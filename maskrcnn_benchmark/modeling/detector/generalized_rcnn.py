@@ -48,6 +48,39 @@ class GeneralizedRCNN(nn.Module):
         images = to_image_list(images)
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
+
+        if 0:
+
+            import cv2
+            # import numpy as np
+            # shape = images.tensors[0].shape
+            # image = np.zeros((shape[1], shape[2], shape[0]), dtype='uint8')
+            img = images.tensors[0].permute([1, 2, 0]).cpu().numpy()
+            if img.max() > 100:
+                img += [123, 116, 102]
+                img = img.astype('uint8')
+            else:
+                img *= [0.229, 0.224, 0.225]
+                img += [0.485, 0.456, 0.406]
+
+                img = (img * 255)
+                img = img.astype('uint8')
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+            color = (255, 255, 0)
+            boxes = proposals[0].bbox
+            boxes = boxes.to(torch.int64)
+            for i, box in enumerate(boxes):
+                if i>100:
+                    break
+                top_left, bottom_right = box[:2].tolist(), box[2:].tolist()
+                img = cv2.rectangle(
+                    img, tuple(top_left), tuple(bottom_right), tuple(color), 1
+                )
+            cv2.imshow("boxes", img)
+            cv2.waitKey(0)
+
+
         if self.roi_heads:
             x, result, detector_losses = self.roi_heads(features, proposals, targets)
         else:
