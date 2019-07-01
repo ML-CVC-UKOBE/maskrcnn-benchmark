@@ -15,6 +15,11 @@ from .efficientnet_utils import (
 from maskrcnn_benchmark.layers import FrozenBatchNorm2d
 
 
+def our_batch_norm(num_features, momentum=0.99, eps=0.0001):
+    return nn.BatchNorm2d(num_features=num_features, momentum=momentum, eps=momentum)
+    # return nn.SyncBatchNorm(num_features=num_features, momentum=momentum, eps=momentum)
+    # return FrozenBatchNorm2d(num_features)
+
 class StemBlock(nn.Module):
     def __init__(self, global_params):
         super().__init__()
@@ -28,6 +33,10 @@ class StemBlock(nn.Module):
         out_channels = round_filters(32, self._global_params)  # number of output channels
         self._conv_stem = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
         self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn0 = nn.SyncBatchNorm(num_features=out_channels, momentum=self._bn_mom, eps=self._bn_eps)
+        # self._bn0 = FrozenBatchNorm2d(out_channels)
+        #self._bn0 = our_batch_norm(out_channels, momentum=bn_mom, eps=bn_eps)
 
     def forward(self, inputs):
         x = relu_fn(self._bn0(self._conv_stem(inputs)))
@@ -59,9 +68,10 @@ class MBConvBlock(nn.Module):
         oup = self._block_args.input_filters * self._block_args.expand_ratio  # number of output channels
         if self._block_args.expand_ratio != 1:
             self._expand_conv = Conv2dSamePadding(in_channels=inp, out_channels=oup, kernel_size=1, bias=False)
-            self._bn0 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+            # self._bn0 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
             # self._bn0 = nn.SyncBatchNorm(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
             # self._bn0 = FrozenBatchNorm2d(oup)
+            self._bn0 = our_batch_norm(oup, momentum=self._bn_mom, eps=self._bn_eps)
 
         # Depthwise convolution phase
         k = self._block_args.kernel_size
@@ -69,9 +79,10 @@ class MBConvBlock(nn.Module):
         self._depthwise_conv = Conv2dSamePadding(
             in_channels=oup, out_channels=oup, groups=oup,  # groups makes it depthwise
             kernel_size=k, stride=s, bias=False)
-        self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+        # self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
         # self._bn1 = nn.SyncBatchNorm(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
         # self._bn1 = FrozenBatchNorm2d(oup)
+        self._bn1 = our_batch_norm(oup, momentum=self._bn_mom, eps=self._bn_eps)
 
         # Squeeze and Excitation layer, if desired
         if self.has_se:
@@ -82,9 +93,10 @@ class MBConvBlock(nn.Module):
         # Output phase
         final_oup = self._block_args.output_filters
         self._project_conv = Conv2dSamePadding(in_channels=oup, out_channels=final_oup, kernel_size=1, bias=False)
-        self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._bn_mom, eps=self._bn_eps)
+        # self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._bn_mom, eps=self._bn_eps)
         # self._bn2 = nn.SyncBatchNorm(num_features=final_oup, momentum=self._bn_mom, eps=self._bn_eps)
         # self._bn2 = FrozenBatchNorm2d(final_oup)
+        self._bn2 = our_batch_norm(final_oup, momentum=self._bn_mom, eps=self._bn_eps)
 
     def forward(self, inputs, drop_connect_rate=None):
         """
@@ -173,9 +185,10 @@ class EfficientNet(nn.Module):
         in_channels = block_args.output_filters  # output of final block
         out_channels = round_filters(1280, self._global_params)
         self._conv_head = Conv2dSamePadding(in_channels, out_channels, kernel_size=1, bias=False)
-        self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
         # self._bn1 = nn.SyncBatchNorm(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
         # self._bn1 = FrozenBatchNorm2d(out_channels)
+        self._bn1 = our_batch_norm(out_channels, momentum=bn_mom, eps=bn_eps)
 
         # Final linear layer
         self._dropout = self._global_params.dropout_rate
