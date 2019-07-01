@@ -47,7 +47,6 @@ def build_efficientnet_backbone(cfg):
     body._blocks[block_to_remove_stride]._depthwise_conv.stride = [1, 1]  # B0
     model = nn.Sequential(OrderedDict([("body", body)]))
     model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
-    print(model)
     return model
 
 
