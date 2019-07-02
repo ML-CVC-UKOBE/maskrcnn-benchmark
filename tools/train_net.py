@@ -39,7 +39,6 @@ def train(cfg, local_rank, distributed):
     model = build_detection_model(cfg)
     device = torch.device(cfg.MODEL.DEVICE)
     model.to(device)
-    import ipdb; ipdb.set_trace()  # BREAKPOINT
 
     optimizer = make_optimizer(cfg, model)
     scheduler = make_lr_scheduler(cfg, optimizer)
@@ -163,7 +162,7 @@ def main():
     cfg.merge_from_list(args.opts)
     cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR,
                                   os.path.splitext(os.path.basename(args.config_file))[0],
-                                  datetime.datetime.utcnow().__str__())
+                                  datetime.datetime.now().__format__("%Y-%m-%d_%H:%M"))
 
     cfg.freeze()
 
