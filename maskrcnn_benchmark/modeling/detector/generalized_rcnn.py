@@ -49,7 +49,7 @@ class GeneralizedRCNN(nn.Module):
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
 
-        if 0:
+        if 1:
 
             import cv2
             # import numpy as np
