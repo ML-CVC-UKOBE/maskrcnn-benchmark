@@ -53,6 +53,51 @@ def build_efficientnet_backbone(cfg):
     return model
 
 
+@registry.BACKBONES.register("E-B0-FPN")
+@registry.BACKBONES.register("E-B1-FPN")
+@registry.BACKBONES.register("E-B2-FPN")
+@registry.BACKBONES.register("E-B3-FPN")
+@registry.BACKBONES.register("E-B4-FPN")
+@registry.BACKBONES.register("E-B5-FPN")
+@registry.BACKBONES.register("E-B6-FPN")
+@registry.BACKBONES.register("E-B7-FPN")
+def build_efficientnet_backbone(cfg):
+    if cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B0-FPN":
+        name = 'efficientnet-b0'
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B1-FPN":
+        name = 'efficientnet-b1'
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B2-FPN":
+        name = 'efficientnet-b2'
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B3-FPN":
+        name = 'efficientnet-b3'
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B4-FPN":
+        name = 'efficientnet-b4'
+    elif cfg["MODEL"]["BACKBONE"]["CONV_BODY"] == "E-B5-FPN":
+        name = 'efficientnet-b5'
+    else:
+        raise NotImplementedError
+
+    body = efficientnet.EfficientNet.from_name(cfg, model_name=name)
+
+    del body._conv_head
+    del body._bn1
+    del body._fc
+
+    out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    fpn = fpn_module.FPN(
+        in_channels_list=body._in_channels_stage2,
+        out_channels=out_channels,
+        conv_block=conv_with_kaiming_uniform(
+            cfg.MODEL.FPN.USE_GN, cfg.MODEL.FPN.USE_RELU
+        ),
+        top_blocks=fpn_module.LastLevelMaxPool(),
+    )
+    model = nn.Sequential(OrderedDict([("body", body), ("fpn", fpn)]))
+    model.out_channels = out_channels
+
+    return model
+
+
 @registry.BACKBONES.register("R-50-C4")
 @registry.BACKBONES.register("R-50-C5")
 @registry.BACKBONES.register("R-101-C4")
