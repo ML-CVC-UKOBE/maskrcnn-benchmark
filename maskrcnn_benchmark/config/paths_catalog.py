@@ -107,6 +107,27 @@ class DatasetCatalog(object):
         "cityscapes_fine_instanceonly_seg_test_cocostyle": {
             "img_dir": "cityscapes/images",
             "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json"
+        },
+        "oid_v5_challenge_train": {
+            "img_dir": "oid/images/train",
+            "ann_file": "oid/annotations/detection/challenge-2019-train-detection-bbox.csv",
+            "image_ann_file": "oid/annotations/detection/challenge-2019-train-detection-human-imagelabels.csv",
+            "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
+            "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
+            "images_info_file": "oid/annotations/detection/challenge-2019-train-images_info.json",
+        },
+        "oid_v5_challenge_val": {
+            "img_dir": "oid/images/val",
+            "ann_file": "oid/annotations/detection/challenge-2019-validation-detection-bbox.csv",
+            "image_ann_file": "oid/annotations/detection/challenge-2019-validation-detection-human-imagelabels.csv",
+            "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
+            "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
+            "images_info_file": "oid/annotations/detection/challenge-2019-validation-images_info.json",
+        },
+        "oid_v5_challenge_test": {
+            "img_dir": "oid/images/test",
+            "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
+            "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
         }
     }
 
@@ -132,6 +153,21 @@ class DatasetCatalog(object):
             )
             return dict(
                 factory="PascalVOCDataset",
+                args=args,
+            )
+        elif "oid_" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                root=os.path.join(data_dir, attrs["img_dir"]),
+                ann_file=os.path.join(data_dir, attrs["ann_file"]),
+                image_ann_file=os.path.join(data_dir, attrs["image_ann_file"]),
+                hierarchy_file=os.path.join(data_dir, attrs["hierarchy_file"]),
+                classname_file=os.path.join(data_dir, attrs["classname_file"]),
+                images_info_file=os.path.join(data_dir, attrs["images_info_file"]),
+            )
+            return dict(
+                factory="OpenImagesDataset",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))
