@@ -20,6 +20,7 @@ def our_batch_norm(num_features, momentum=0.99, eps=0.0001):
     # return nn.SyncBatchNorm(num_features=num_features, momentum=momentum, eps=momentum)
     # return FrozenBatchNorm2d(num_features)
 
+
 class StemBlock(nn.Module):
     def __init__(self, global_params):
         super().__init__()
@@ -32,11 +33,11 @@ class StemBlock(nn.Module):
         in_channels = 3  # rgb
         out_channels = round_filters(32, self._global_params)  # number of output channels
         self._conv_stem = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
-        self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
         # self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
         # self._bn0 = nn.SyncBatchNorm(num_features=out_channels, momentum=self._bn_mom, eps=self._bn_eps)
         # self._bn0 = FrozenBatchNorm2d(out_channels)
-        #self._bn0 = our_batch_norm(out_channels, momentum=bn_mom, eps=bn_eps)
+        self._bn0 = our_batch_norm(out_channels, momentum=bn_mom, eps=bn_eps)
 
     def forward(self, inputs):
         x = relu_fn(self._bn0(self._conv_stem(inputs)))
@@ -147,6 +148,8 @@ class EfficientNet(nn.Module):
         assert len(blocks_args) > 0, 'block args must be greater than 0'
         self._global_params = global_params
         self._blocks_args = blocks_args
+        self._blocks_args_updated = []
+        self._use_FPN = cfg['MODEL']["RPN"]["USE_FPN"]
 
         # Batch norm parameters
         bn_mom = 1 - self._global_params.batch_norm_momentum
@@ -180,6 +183,21 @@ class EfficientNet(nn.Module):
                 block_args = block_args._replace(input_filters=block_args.output_filters, stride=1)
             for _ in range(block_args.num_repeat - 1):
                 self._blocks.append(MBConvBlock(block_args, self._global_params))
+
+            self._blocks_args_updated.append(block_args)
+
+        layers_to_keep = (1, 2, 4, 6)
+        self._keep_features_from = []
+        self._in_channels_stage2 = []
+
+        for idx, b in enumerate(self._blocks_args_updated):
+            for n in range(b.num_repeat-1):
+                self._keep_features_from.append(False)
+
+            keep_features_from_layer = idx in layers_to_keep
+            self._keep_features_from.append(keep_features_from_layer)
+            if keep_features_from_layer:
+                self._in_channels_stage2.append(b.output_filters)
 
         # Head
         in_channels = block_args.output_filters  # output of final block
@@ -220,28 +238,40 @@ class EfficientNet(nn.Module):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
-            # CREO Q LO HAN CAMBIADO YA....
-            # x = block(x)  # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
+
             x = block(x, drop_connect_rate)  # see https://github.com/tensorflow/tpu/issues/381
 
         return x
 
+    def extract_fpn_features(self, inputs):
+        """ Returns output of the final convolution layer """
+
+        # Stem
+        x = self._stem(inputs)
+
+        output = []
+
+        # Blocks
+        for idx, block in enumerate(self._blocks):
+            drop_connect_rate = self._global_params.drop_connect_rate
+            if drop_connect_rate:
+                drop_connect_rate *= float(idx) / len(self._blocks)
+
+            x = block(x, drop_connect_rate)  # see https://github.com/tensorflow/tpu/issues/381
+
+            if self._keep_features_from[idx]:
+                output.append(x)
+
+        return output
+
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
 
-        # Convolution layers
-        outputs = []
-        x = self.extract_features(inputs)
-
-
-        # # Head
-        # x = relu_fn(self._bn1(self._conv_head(x)))
-        # x = F.adaptive_avg_pool2d(x, 1).squeeze(-1).squeeze(-1)
-        # if self._dropout:
-        #     x = F.dropout(x, p=self._dropout, training=self.training)
-        # x = self._fc(x)
-
-        outputs.append(x)
+        if self._use_FPN:
+            outputs = self.extract_fpn_features(inputs)
+        else:
+            # Convolution layers
+            outputs = [self.extract_features(inputs)]
         return outputs
 
     @classmethod

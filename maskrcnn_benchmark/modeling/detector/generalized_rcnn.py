@@ -49,7 +49,28 @@ class GeneralizedRCNN(nn.Module):
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
 
-        if 1:
+        self.show_boxes(images, proposals, "proposals")
+
+        if self.roi_heads:
+            x, result, detector_losses = self.roi_heads(features, proposals, targets)
+        else:
+            # RPN-only models don't have roi_heads
+            x = features
+            result = proposals
+            detector_losses = {}
+
+        self.show_boxes(images, result, "detections")
+
+        if self.training:
+            losses = {}
+            losses.update(detector_losses)
+            losses.update(proposal_losses)
+            return losses
+
+        return result
+
+    def show_boxes(self, images, proposals, title=""):
+        if 0:
 
             import cv2
             # import numpy as np
@@ -68,31 +89,22 @@ class GeneralizedRCNN(nn.Module):
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
             color = (255, 255, 0)
-            boxes = proposals[0].bbox
-            boxes = boxes.to(torch.int64)
-            for i, box in enumerate(boxes):
-                if i>100:
-                    break
-                top_left, bottom_right = box[:2].tolist(), box[2:].tolist()
-                img = cv2.rectangle(
-                    img, tuple(top_left), tuple(bottom_right), tuple(color), 1
-                )
-            cv2.imshow("boxes", img)
+            max_boxes = 1000
+            if isinstance(proposals[0], list):
+                list_of_boxes = []
+                for b in proposals[0]:
+                    list_of_boxes.append(b.bbox[:max_boxes, :])
+            else:
+                list_of_boxes = [proposals[0].bbox[:max_boxes, :]]
+
+            for boxes in list_of_boxes:
+                boxes = boxes.to(torch.int64)
+                for i, box in enumerate(boxes):
+                    # if i > max_boxes:
+                    #     break
+                    top_left, bottom_right = box[:2].tolist(), box[2:].tolist()
+                    img = cv2.rectangle(
+                        img, tuple(top_left), tuple(bottom_right), tuple(color), 1
+                    )
+            cv2.imshow(title, img)
             cv2.waitKey(10)
-
-
-        if self.roi_heads:
-            x, result, detector_losses = self.roi_heads(features, proposals, targets)
-        else:
-            # RPN-only models don't have roi_heads
-            x = features
-            result = proposals
-            detector_losses = {}
-
-        if self.training:
-            losses = {}
-            losses.update(detector_losses)
-            losses.update(proposal_losses)
-            return losses
-
-        return result
