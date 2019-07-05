@@ -5,10 +5,9 @@ Basic training script for PyTorch
 
 # Set up custom environment before nearly anything else is imported
 # NOTE: this should be the first import (no not reorder)
-import datetime
-
 from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:skip
 
+import datetime
 import argparse
 import os
 
@@ -162,7 +161,8 @@ def main():
     cfg.merge_from_list(args.opts)
     if args.local_rank == 0:
         cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR,
-                                    os.path.splitext(os.path.basename(args.config_file))[0],
+                                      os.path.splitext(os.path.basename(args.config_file))[0],
+                                      cfg.DATASETS.TRAIN[0],
                                       datetime.datetime.now().__format__("%Y-%m-%d_%H:%M"))
 
     cfg.freeze()

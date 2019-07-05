@@ -37,39 +37,24 @@ def has_valid_annotation(anno):
 
 class OpenImagesDataset(torchvision.datasets.VisionDataset):
     def __init__(
-        self, ann_file, classname_file, hierarchy_file, image_ann_file, info_images, root,
+        self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
             remove_images_without_annotations, transforms=None
     ):
         super(OpenImagesDataset, self).__init__(root)
         # sort indices for reproducible results
 
         self.annotations = pd.read_csv(ann_file)
-        self.classname_file = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
-        self.image_ann_file = pd.read_csv(image_ann_file)
+        self.classname = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
+        self.image_ann = pd.read_csv(image_ann_file)
         with open(hierarchy_file) as json_file:
-            self.hierarchy_file = json.load(json_file)
+            self.hierarchy = json.load(json_file)
 
-        with open(info_images) as json_file:
-            self.info_images = json.load(json_file)
-
-        self.annotations = self.annotations.drop(columns=['Source', 'Confidence'])
-        self.image_ann_file = self.image_ann_file.drop(columns=['Source'])
+        with open(images_info_file) as json_file:
+            self.images_info = json.load(json_file)
 
         self.ids = self.annotations["ImageID"].unique()
 
-        self.annotations = self.annotations.set_index("ImageID")
-
-        # filter images without detection annotations
-        # if remove_images_without_annotations:
-        #     ids = []
-        #     for img_id in self.ids:
-        #         ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=None)
-        #         anno = self.coco.loadAnns(ann_ids)
-        #         if has_valid_annotation(anno):
-        #             ids.append(img_id)
-        #     self.ids = ids
-
-        self.categories = {cat[0]: cat[1] for cat in self.classname_file.values}
+        self.categories = {cat[0]: cat[1] for cat in self.classname.values}
 
         self.json_category_id_to_contiguous_id = {
             v: i + 1 for i, v in enumerate(self.categories)
@@ -85,25 +70,25 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         return len(self.ids)
 
     def __getitem__(self, idx):
-        # img, anno = super(COCODataset, self).__getitem__(idx)
 
         image_id = self.id_to_img_map[idx]
-
         anno = self.annotations[self.annotations["ImageID"] == image_id]
 
         imagename = image_id + ".jpg"
         img = Image.open(os.path.join(self.root, imagename)).convert('RGB')
 
-
         # filter crowd annotations
-        # TODO might be better to add an extra field
-        anno = [obj for obj in anno if obj["iscrowd"] == 0]
+        #anno = anno[anno["IsGroupOf"] ==  0]
+        boxes = [anno["XMin"].values, anno["YMin"].values,
+                 anno["XMax"].values, anno["YMax"].values]
+        boxes = torch.as_tensor(boxes).t().reshape(-1, 4)  # guard against no boxes
+        target = BoxList(boxes, img.size, mode="xyxy")
+        boxes[:, 0] *= img.size[0]
+        boxes[:, 2] *= img.size[0]
+        boxes[:, 1] *= img.size[1]
+        boxes[:, 3] *= img.size[1]
 
-        boxes = [obj["bbox"] for obj in anno]
-        boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes
-        target = BoxList(boxes, img.size, mode="xywh").convert("xyxy")
-
-        classes = [obj["category_id"] for obj in anno]
+        classes = anno["LabelName"]
         classes = [self.json_category_id_to_contiguous_id[c] for c in classes]
         classes = torch.tensor(classes)
         target.add_field("labels", classes)
@@ -127,5 +112,5 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
 
     def get_img_info(self, index):
         img_id = self.id_to_img_map[index]
-        img_data = self.coco.imgs[img_id]
+        img_data = self.images_info[img_id]
         return img_data

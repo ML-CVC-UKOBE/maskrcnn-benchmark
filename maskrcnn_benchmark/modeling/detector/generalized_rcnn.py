@@ -49,8 +49,6 @@ class GeneralizedRCNN(nn.Module):
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
 
-        self.show_boxes(images, proposals, "proposals")
-
         if self.roi_heads:
             x, result, detector_losses = self.roi_heads(features, proposals, targets)
         else:
@@ -59,7 +57,10 @@ class GeneralizedRCNN(nn.Module):
             result = proposals
             detector_losses = {}
 
-        self.show_boxes(images, result, "detections")
+        # TODO make this a new config setting
+        if 1:
+            self.show_boxes(images, proposals, "proposals")
+            self.show_boxes(images, result, "detections")
 
         if self.training:
             losses = {}
@@ -70,41 +71,39 @@ class GeneralizedRCNN(nn.Module):
         return result
 
     def show_boxes(self, images, proposals, title=""):
-        if 0:
+        import cv2
+        # import numpy as np
+        # shape = images.tensors[0].shape
+        # image = np.zeros((shape[1], shape[2], shape[0]), dtype='uint8')
+        img = images.tensors[0].permute([1, 2, 0]).cpu().numpy()
+        if img.max() > 1000:
+            img += [123, 116, 102]
+            img = img.astype('uint8')
+        else:
+            img *= [0.229, 0.224, 0.225]
+            img += [0.485, 0.456, 0.406]
 
-            import cv2
-            # import numpy as np
-            # shape = images.tensors[0].shape
-            # image = np.zeros((shape[1], shape[2], shape[0]), dtype='uint8')
-            img = images.tensors[0].permute([1, 2, 0]).cpu().numpy()
-            if img.max() > 100:
-                img += [123, 116, 102]
-                img = img.astype('uint8')
-            else:
-                img *= [0.229, 0.224, 0.225]
-                img += [0.485, 0.456, 0.406]
+            img = (img * 255)
+            img = img.astype('uint8')
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
-                img = (img * 255)
-                img = img.astype('uint8')
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        color = (255, 255, 0)
+        max_boxes = 1000
+        if isinstance(proposals[0], list):
+            list_of_boxes = []
+            for b in proposals[0]:
+                list_of_boxes.append(b.bbox[:max_boxes, :])
+        else:
+            list_of_boxes = [proposals[0].bbox[:max_boxes, :]]
 
-            color = (255, 255, 0)
-            max_boxes = 1000
-            if isinstance(proposals[0], list):
-                list_of_boxes = []
-                for b in proposals[0]:
-                    list_of_boxes.append(b.bbox[:max_boxes, :])
-            else:
-                list_of_boxes = [proposals[0].bbox[:max_boxes, :]]
-
-            for boxes in list_of_boxes:
-                boxes = boxes.to(torch.int64)
-                for i, box in enumerate(boxes):
-                    # if i > max_boxes:
-                    #     break
-                    top_left, bottom_right = box[:2].tolist(), box[2:].tolist()
-                    img = cv2.rectangle(
-                        img, tuple(top_left), tuple(bottom_right), tuple(color), 1
-                    )
-            cv2.imshow(title, img)
-            cv2.waitKey(10)
+        for boxes in list_of_boxes:
+            boxes = boxes.to(torch.int64)
+            for i, box in enumerate(boxes):
+                # if i > max_boxes:
+                #     break
+                top_left, bottom_right = box[:2].tolist(), box[2:].tolist()
+                img = cv2.rectangle(
+                    img, tuple(top_left), tuple(bottom_right), tuple(color), 1
+                )
+        cv2.imshow(title, img)
+        cv2.waitKey(0)
