@@ -16,9 +16,9 @@ from maskrcnn_benchmark.layers import FrozenBatchNorm2d
 
 
 def our_batch_norm(num_features, momentum=0.99, eps=0.0001):
-    return nn.BatchNorm2d(num_features=num_features, momentum=momentum, eps=momentum)
+    #return nn.BatchNorm2d(num_features=num_features, momentum=momentum, eps=momentum)
     # return nn.SyncBatchNorm(num_features=num_features, momentum=momentum, eps=momentum)
-    # return FrozenBatchNorm2d(num_features)
+    return FrozenBatchNorm2d(num_features)
 
 
 class StemBlock(nn.Module):
