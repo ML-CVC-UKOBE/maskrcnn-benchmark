@@ -78,15 +78,15 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         img = Image.open(os.path.join(self.root, imagename)).convert('RGB')
 
         # filter crowd annotations
-        #anno = anno[anno["IsGroupOf"] ==  0]
+        # anno = anno[anno["IsGroupOf"] ==  0]
         boxes = [anno["XMin"].values, anno["YMin"].values,
                  anno["XMax"].values, anno["YMax"].values]
         boxes = torch.as_tensor(boxes).t().reshape(-1, 4)  # guard against no boxes
-        target = BoxList(boxes, img.size, mode="xyxy")
         boxes[:, 0] *= img.size[0]
         boxes[:, 2] *= img.size[0]
         boxes[:, 1] *= img.size[1]
         boxes[:, 3] *= img.size[1]
+        target = BoxList(boxes, img.size, mode="xyxy")
 
         classes = anno["LabelName"]
         classes = [self.json_category_id_to_contiguous_id[c] for c in classes]

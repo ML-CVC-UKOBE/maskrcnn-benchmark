@@ -87,20 +87,29 @@ class GeneralizedRCNN(nn.Module):
             img = img.astype('uint8')
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
-        color = (255, 255, 0)
-        max_boxes = 1000
+        max_boxes = 10000
         if isinstance(proposals[0], list):
             list_of_boxes = []
             for b in proposals[0]:
                 list_of_boxes.append(b.bbox[:max_boxes, :])
         else:
             list_of_boxes = [proposals[0].bbox[:max_boxes, :]]
+            scores = []
+            if "objectness" in proposals[0].fields():
+                scores = proposals[0].get_field("objectness").cpu().numpy()
+            elif "scores" in proposals[0].fields():
+                scores = proposals[0].get_field("scores").cpu().numpy()
 
         for boxes in list_of_boxes:
             boxes = boxes.to(torch.int64)
             for i, box in enumerate(boxes):
                 # if i > max_boxes:
                 #     break
+                if scores[i] == 1:
+                    color = (0, 0, 255)
+                else:
+                    color = (255, 255, 0)
+
                 top_left, bottom_right = box[:2].tolist(), box[2:].tolist()
                 img = cv2.rectangle(
                     img, tuple(top_left), tuple(bottom_right), tuple(color), 1
