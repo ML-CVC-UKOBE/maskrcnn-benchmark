@@ -58,7 +58,7 @@ class GeneralizedRCNN(nn.Module):
             detector_losses = {}
 
         # TODO make this a new config setting
-        if 1:
+        if 0:
             self.show_boxes(images, proposals, "proposals")
             self.show_boxes(images, result, "detections")
 
@@ -76,7 +76,7 @@ class GeneralizedRCNN(nn.Module):
         # shape = images.tensors[0].shape
         # image = np.zeros((shape[1], shape[2], shape[0]), dtype='uint8')
         img = images.tensors[0].permute([1, 2, 0]).cpu().numpy()
-        if img.max() > 1000:
+        if img.max() > 100:
             img += [123, 116, 102]
             img = img.astype('uint8')
         else:

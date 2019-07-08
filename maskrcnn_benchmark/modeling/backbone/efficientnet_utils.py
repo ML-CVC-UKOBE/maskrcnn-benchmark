@@ -93,7 +93,6 @@ class Conv2dSamePadding(nn.Conv2d):
             # x = F.pad(x, [pad_w//2, pad_w - pad_w//2, pad_h//2, pad_h - pad_h//2], mode='replicate')
             x = F.pad(x, [0, pad_w, 0, pad_h], mode='replicate')
             # x = F.pad(x, [pad_w//2, pad_w - pad_w//2, pad_h//2, pad_h - pad_h//2], mode='reflect')
-
         return F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
 
