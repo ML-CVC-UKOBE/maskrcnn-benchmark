@@ -15,7 +15,7 @@ MODEL:
   ROI_HEADS:
     USE_FPN: True
   ROI_BOX_HEAD:
-    NUM_CLASSES: 500
+    NUM_CLASSES: 501
     POOLER_RESOLUTION: 7
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
     POOLER_SAMPLING_RATIO: 2
@@ -32,6 +32,12 @@ SOLVER:
   STEPS: (60000, 80000)
   MAX_ITER: 90000
   IMS_PER_BATCH: 16
+#INPUT:
+  # Size of the smallest side of the image during training
+#  MIN_SIZE_TRAIN: (300,)  # (800,)
+  # Maximum size of the side of the image during training
+#  MAX_SIZE_TRAIN: 400
+
 #SOLVER:
 #  BASE_LR: 0.00125
 #  WEIGHT_DECAY: 0.0001

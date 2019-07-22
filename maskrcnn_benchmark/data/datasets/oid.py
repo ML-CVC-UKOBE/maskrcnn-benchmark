@@ -1,10 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import json
+import time
 
 import torch
 import torchvision
 
+import re
 import pandas as pd
+import tqdm
 
 from PIL import Image
 import os
@@ -35,15 +38,35 @@ def has_valid_annotation(anno):
     return False
 
 
+class OidRecord:
+    def __init__(self, row):
+        self.image_id = row[0]
+        if len(row) == 13:
+            self.is_train = True
+        elif len(row) != 7:
+            raise RuntimeError("ROW SIZE is not 13 (for training) neither 7 (validation)")
+
+        if self.is_train:
+            self.label = row[2]
+            self.box = [float(i) for i in row[4:8]]
+            # self.confidence = float(row[3])
+            self.is_group_of = row[10] == '1'
+        else:
+            self.label = row[1]
+            self.box = [float(i) for i in row[2:6]]
+            # self.confidence = 1
+            self.is_group_of = row[6] == '1'
+
+
 class OpenImagesDataset(torchvision.datasets.VisionDataset):
     def __init__(
-        self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
+            self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
             remove_images_without_annotations, transforms=None
     ):
         super(OpenImagesDataset, self).__init__(root)
         # sort indices for reproducible results
 
-        self.annotations = pd.read_csv(ann_file)
+        print("Reading OpenImagesDataset Annotations")
         self.classname = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
         self.image_ann = pd.read_csv(image_ann_file)
         with open(hierarchy_file) as json_file:
@@ -52,7 +75,18 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         with open(images_info_file) as json_file:
             self.images_info = json.load(json_file)
 
-        self.ids = self.annotations["ImageID"].unique()
+        self.annotations = {}
+
+        with open(ann_file, mode='r') as csv_file:
+            next(csv_file)  # skip header
+            for line in tqdm.tqdm(csv_file.readlines()):
+                item = OidRecord(re.split(',', line.replace("\n", "")))
+                image_id = item.image_id
+                if image_id not in self.annotations:
+                    self.annotations[image_id] = []
+                self.annotations[image_id].append(item)
+
+        self.ids = self.annotations.keys()
 
         self.categories = {cat[0]: cat[1] for cat in self.classname.values}
 
@@ -72,42 +106,34 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
     def __getitem__(self, idx):
 
         image_id = self.id_to_img_map[idx]
-        anno = self.annotations[self.annotations["ImageID"] == image_id]
+        anno = self.annotations[image_id]
 
         imagename = image_id + ".jpg"
         img = Image.open(os.path.join(self.root, imagename)).convert('RGB')
 
-        # filter crowd annotations
-        # anno = anno[anno["IsGroupOf"] ==  0]
-        boxes = [anno["XMin"].values, anno["YMin"].values,
-                 anno["XMax"].values, anno["YMax"].values]
-        boxes = torch.as_tensor(boxes).t().reshape(-1, 4)  # guard against no boxes
+        boxes = []
+        classes = []
+        for i, a in enumerate(anno):
+            if a.is_group_of:
+                # filter crowd annotations
+                continue
+            boxes.append((a.box[0], a.box[2], a.box[1], a.box[3]))  # xmin(), ymin(), xmax(), ymax()
+            classes.append(a.label)
+        boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes
+
         boxes[:, 0] *= img.size[0]
         boxes[:, 2] *= img.size[0]
         boxes[:, 1] *= img.size[1]
         boxes[:, 3] *= img.size[1]
         target = BoxList(boxes, img.size, mode="xyxy")
 
-        classes = anno["LabelName"]
         classes = [self.json_category_id_to_contiguous_id[c] for c in classes]
         classes = torch.tensor(classes)
         target.add_field("labels", classes)
 
-        # if anno and "segmentation" in anno[0]:
-        #     masks = [obj["segmentation"] for obj in anno]
-        #     masks = SegmentationMask(masks, img.size, mode='poly')
-        #     target.add_field("masks", masks)
-        #
-        # if anno and "keypoints" in anno[0]:
-        #     keypoints = [obj["keypoints"] for obj in anno]
-        #     keypoints = PersonKeypoints(keypoints, img.size)
-        #     target.add_field("keypoints", keypoints)
-
         target = target.clip_to_image(remove_empty=True)
-
         if self._transforms is not None:
             img, target = self._transforms(img, target)
-
         return img, target, idx
 
     def get_img_info(self, index):
