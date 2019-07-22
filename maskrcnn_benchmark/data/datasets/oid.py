@@ -114,9 +114,9 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         boxes = []
         classes = []
         for i, a in enumerate(anno):
-            if a.is_group_of:
+            # if a.is_group_of:
                 # filter crowd annotations
-                continue
+                # continue
             boxes.append((a.box[0], a.box[2], a.box[1], a.box[3]))  # xmin(), ymin(), xmax(), ymax()
             classes.append(a.label)
         boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes

@@ -37,4 +37,9 @@ SOLVER:
   STEPS: (960000, 1280000)
   MAX_ITER: 1440000
   IMS_PER_BATCH: 1
+INPUT:
+  # Size of the smallest side of the image during training
+  MIN_SIZE_TRAIN: (300,)  # (800,)
+  # Maximum size of the side of the image during training
+  MAX_SIZE_TRAIN: 400
 
