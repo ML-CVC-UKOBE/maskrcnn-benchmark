@@ -17,8 +17,8 @@ from maskrcnn_benchmark.layers import FrozenBatchNorm2d
 
 def our_batch_norm(num_features, momentum=0.99, eps=0.0001):
     #return nn.BatchNorm2d(num_features=num_features, momentum=momentum, eps=momentum)
-    # return nn.SyncBatchNorm(num_features=num_features, momentum=momentum, eps=momentum)
-    return FrozenBatchNorm2d(num_features)
+    return nn.SyncBatchNorm(num_features=num_features, momentum=momentum, eps=momentum)
+    #return FrozenBatchNorm2d(num_features)
 
 
 class StemBlock(nn.Module):
@@ -239,7 +239,7 @@ class EfficientNet(nn.Module):
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
 
-            x = block(x, drop_connect_rate)  # see https://github.com/tensorflow/tpu/issues/381
+            x = block(x)# drop_connect_rate)  # see https://github.com/tensorflow/tpu/issues/381
 
         return x
 

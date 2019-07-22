@@ -59,7 +59,7 @@ class GeneralizedRCNN(nn.Module):
 
         # TODO make this a new config setting
         if 0:
-            self.show_boxes(images, proposals, "proposals")
+            #self.show_boxes(images, proposals, "proposals")
             self.show_boxes(images, result, "detections")
 
         if self.training:
@@ -76,7 +76,7 @@ class GeneralizedRCNN(nn.Module):
         # shape = images.tensors[0].shape
         # image = np.zeros((shape[1], shape[2], shape[0]), dtype='uint8')
         img = images.tensors[0].permute([1, 2, 0]).cpu().numpy()
-        if img.max() > 1000:
+        if 1:
             img += [123, 116, 102]
             img = img.astype('uint8')
         else:

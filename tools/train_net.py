@@ -159,7 +159,7 @@ def main():
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    if args.local_rank == 0:
+    if args.local_rank == 0 and cfg.DATASETS.TRAIN[0] not in cfg.OUTPUT_DIR:
         cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR,
                                       os.path.splitext(os.path.basename(args.config_file))[0],
                                       cfg.DATASETS.TRAIN[0],

@@ -82,11 +82,10 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         boxes = [anno["XMin"].values, anno["YMin"].values,
                  anno["XMax"].values, anno["YMax"].values]
         boxes = torch.as_tensor(boxes).t().reshape(-1, 4)  # guard against no boxes
-        boxes[:, 0] *= img.size[0]
-        boxes[:, 2] *= img.size[0]
-        boxes[:, 1] *= img.size[1]
-        boxes[:, 3] *= img.size[1]
+        width, height = img.size
+        reescale = torch.tensor(([width, height]*2),dtype=torch.float)[None,]
         target = BoxList(boxes, img.size, mode="xyxy")
+        target.bbox.mul_(reescale)
 
         classes = anno["LabelName"]
         classes = [self.json_category_id_to_contiguous_id[c] for c in classes]
