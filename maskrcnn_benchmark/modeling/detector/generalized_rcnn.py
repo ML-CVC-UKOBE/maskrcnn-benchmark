@@ -76,7 +76,7 @@ class GeneralizedRCNN(nn.Module):
         # shape = images.tensors[0].shape
         # image = np.zeros((shape[1], shape[2], shape[0]), dtype='uint8')
         img = images.tensors[0].permute([1, 2, 0]).cpu().numpy()
-        if 1:
+        if img.max() > 100:
             img += [123, 116, 102]
             img = img.astype('uint8')
         else:
