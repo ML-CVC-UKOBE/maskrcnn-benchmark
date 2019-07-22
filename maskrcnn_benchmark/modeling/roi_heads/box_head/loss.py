@@ -151,6 +151,7 @@ class FastRCNNLossComputation(object):
         sampled_pos_inds_subset = torch.nonzero(labels > 0).squeeze(1)
         labels_pos = labels[sampled_pos_inds_subset]
         if self.cls_agnostic_bbox_reg:
+
             map_inds = torch.tensor([4, 5, 6, 7], device=device)
         else:
             map_inds = 4 * labels_pos[:, None] + torch.tensor(

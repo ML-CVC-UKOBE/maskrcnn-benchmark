@@ -3,7 +3,7 @@ MODEL:
   WEIGHT: "http://storage.googleapis.com/public-models/efficientnet-b0-08094119.pth"
   BACKBONE:
       CONV_BODY: 'E-B0-FPN'
-      FREEZE_CONV_BODY_AT: 0
+      FREEZE_CONV_BODY_AT: 2
   RESNETS:
     BACKBONE_OUT_CHANNELS: 256
     RES2_OUT_CHANNELS: 256

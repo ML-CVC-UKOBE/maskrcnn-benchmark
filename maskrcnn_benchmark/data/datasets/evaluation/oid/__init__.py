@@ -1,6 +1,5 @@
 from .oid_eval import do_oid_evaluation
 
-
 def oid_evaluation(
     dataset,
     predictions,

@@ -59,7 +59,7 @@ class GeneralizedRCNN(nn.Module):
 
         # TODO make this a new config setting
         if 0:
-            self.show_boxes(images, proposals, "proposals")
+            #self.show_boxes(images, proposals, "proposals")
             self.show_boxes(images, result, "detections")
 
         if self.training:
