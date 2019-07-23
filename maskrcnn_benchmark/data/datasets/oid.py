@@ -41,10 +41,12 @@ def has_valid_annotation(anno):
 class OidRecord:
     def __init__(self, row):
         self.image_id = row[0]
+        self.is_train = False
         if len(row) == 13:
             self.is_train = True
         elif len(row) != 7:
             raise RuntimeError("ROW SIZE is not 13 (for training) neither 7 (validation)")
+
 
         if self.is_train:
             self.label = row[2]
@@ -69,6 +71,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         print("Reading OpenImagesDataset Annotations")
         self.classname = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
         self.image_ann = pd.read_csv(image_ann_file)
+        self.pd_ann = pd.read_csv(ann_file)
         with open(hierarchy_file) as json_file:
             self.hierarchy = json.load(json_file)
 
@@ -86,8 +89,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
                     self.annotations[image_id] = []
                 self.annotations[image_id].append(item)
 
-        self.ids = self.annotations.keys()
-
+        self.ids = [*self.annotations.keys()]
         self.categories = {cat[0]: cat[1] for cat in self.classname.values}
 
         self.json_category_id_to_contiguous_id = {

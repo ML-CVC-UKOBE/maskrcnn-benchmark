@@ -3,9 +3,9 @@ import torch
 from tqdm import tqdm
 import os
 
-#from object_detection.metrics import io_utils
-#from object_detection.metrics import oid_challenge_evaluation_utils as utils
-#from object_detection.utils import object_detection_evaluation
+from object_detection.metrics import io_utils
+from object_detection.metrics import oid_challenge_evaluation_utils as utils
+from object_detection.utils import object_detection_evaluation
 
 
 def do_oid_evaluation(
@@ -68,7 +68,7 @@ def do_oid_evaluation(
           "XMin": xmin, "YMin": ymin, "XMax": xmax, "YMax": ymax}
 
     all_predictions = pd.DataFrame.from_dict(df)
-    all_location_annotations = dataset.annotations
+    all_location_annotations = dataset.pd_ann
     all_label_annotations = dataset.image_ann
     all_label_annotations.rename(
         columns={'Confidence': 'ConfidenceImageLabel'}, inplace=True)
@@ -86,9 +86,12 @@ def do_oid_evaluation(
 
     images_processed = 0
     for groundtruth in tqdm(all_annotations.groupby('ImageID')):
+
         image_id, image_groundtruth = groundtruth
+
         groundtruth_dictionary = utils.build_groundtruth_dictionary(
             image_groundtruth, class_label_map)
+
         challenge_evaluator.add_single_ground_truth_image_info(
             image_id, groundtruth_dictionary)
 
