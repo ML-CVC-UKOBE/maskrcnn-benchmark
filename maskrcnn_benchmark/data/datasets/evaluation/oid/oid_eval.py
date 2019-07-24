@@ -2,7 +2,6 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 import os
-import logging
 
 from .metrics import io_utils
 from .metrics import oid_challenge_evaluation_utils as utils

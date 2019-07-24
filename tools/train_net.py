@@ -123,8 +123,7 @@ def run_test(cfg, model, distributed):
 
 
 def main():
-    import tensorflow as tf
-    tf.compat.v1.logging.ERROR
+
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
     parser.add_argument(
         "--config-file",
