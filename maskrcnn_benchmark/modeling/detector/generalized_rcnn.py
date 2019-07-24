@@ -77,7 +77,8 @@ class GeneralizedRCNN(nn.Module):
         # image = np.zeros((shape[1], shape[2], shape[0]), dtype='uint8')
         img = images.tensors[0].permute([1, 2, 0]).cpu().numpy()
         if img.max() > 100:
-            img += [123, 116, 102]
+            # img += [122, 115, 101]
+            img += [102.9801, 115.9465, 122.7717]
             img = img.astype('uint8')
         else:
             img *= [0.229, 0.224, 0.225]
@@ -115,4 +116,4 @@ class GeneralizedRCNN(nn.Module):
                     img, tuple(top_left), tuple(bottom_right), tuple(color), 1
                 )
         cv2.imshow(title, img)
-        cv2.waitKey(0)
+        cv2.waitKey(10)
