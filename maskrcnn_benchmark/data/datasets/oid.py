@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+import collections
 import json
 import time
 
@@ -66,7 +67,6 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
             remove_images_without_annotations, transforms=None
     ):
         super(OpenImagesDataset, self).__init__(root)
-        # sort indices for reproducible results
 
         print("Reading OpenImagesDataset Annotations")
         self.classname = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
@@ -90,7 +90,12 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
                 self.annotations[image_id].append(item)
 
         self.ids = [*self.annotations.keys()]
-        self.categories = {cat[0]: cat[1] for cat in self.classname.values}
+        # sort indices for reproducible results
+        self.ids.sort()
+        # self.categories = {cat[0]: cat[1] for cat in self.classname.values}
+        self.categories = collections.OrderedDict()
+        for cat in self.classname.values:
+            self.categories[cat[0]] = cat[1]
 
         self.json_category_id_to_contiguous_id = {
             v: i + 1 for i, v in enumerate(self.categories)
