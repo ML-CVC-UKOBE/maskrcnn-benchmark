@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 import os
+import logging
 
 from object_detection.metrics import io_utils
 from object_detection.metrics import oid_challenge_evaluation_utils as utils
@@ -103,7 +104,7 @@ def do_oid_evaluation(
         images_processed += 1
 
     metrics = challenge_evaluator.evaluate()
-    print(metrics)
+    print(metrics["OpenImagesDetectionChallenge_Precision/mAP@0.5IOU"])
 
-    with open(os.path.join(output_folder, "output_metrics.csv"), 'w') as fid:
+    with open(os.path.join(output_folder, "results.csv"), 'w') as fid:
         io_utils.write_csv(fid, metrics)

@@ -81,7 +81,7 @@ def inference(
     total_timer = Timer()
     inference_timer = Timer()
     total_timer.tic()
-    #predictions = compute_on_dataset(model, data_loader, device, inference_timer)
+    predictions = compute_on_dataset(model, data_loader, device, inference_timer)
     # wait for all processes to complete before measuring the time
     synchronize()
     total_time = total_timer.toc()
@@ -100,14 +100,14 @@ def inference(
         )
     )
 
-    #predictions = _accumulate_predictions_from_multiple_gpus(predictions)
+    predictions = _accumulate_predictions_from_multiple_gpus(predictions)
     if not is_main_process():
         return
 
-    #if output_folder:
-    #    torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
+    if output_folder:
+        torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
 
-    predictions = torch.load(os.path.join(output_folder, "predictions.pth"))
+    #predictions = torch.load(os.path.join(output_folder, "predictions.pth"))
     extra_args = dict(
         box_only=box_only,
         iou_types=iou_types,
