@@ -24,7 +24,12 @@ def do_oid_evaluation(
     ymin = []
     xmax = []
     ymax = []
+
+    print("")
     print("Preparing BOXES for evaluation")
+    print("")
+
+    all_predictions_dict = {}
     verbose = False
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
@@ -35,39 +40,17 @@ def do_oid_evaluation(
             img, gt, ii = dataset[i]
             show_boxes(img, [pred], "PRED", dataset.contiguous_category_id_to_json_id, dataset.categories)
 
-        width, height = pred.size
-        reescale = torch.tensor(([width, height]*2), dtype=torch.float)[None, ]
-        pred.bbox.div_(reescale)
-        # image_id2 = dataset.ids[i]
+        boxes = pred.bbox.cpu().numpy()
+        boxes /= (pred.size * 2)
         image_id = dataset.id_to_img_map[i]
-        # Extract predicted box coordinates of every box in image
-        for coord in pred.bbox:
-            xmin.append(coord[0].item())
-            ymin.append(coord[1].item())
-            xmax.append(coord[2].item())
-            ymax.append(coord[3].item())
 
-        # Extract labels and scores for each box in image
-        for j, (label_id, score) in enumerate(zip(pred.get_field('labels'),
-                                                  pred.get_field('scores'))):
+        labels = [dataset.contiguous_category_id_to_json_id[l.item()] for l in pred.get_field('labels')]
+        scores = [s.item() for s in pred.get_field('scores')]
 
-            label = dataset.contiguous_category_id_to_json_id[label_id.item()]
+        df = {"ImageID": image_id, "LabelName": labels, "Score": scores,
+              "XMin": boxes[:, 0], "YMin": boxes[:, 1], "XMax": boxes[:, 2], "YMax": boxes[:, 3]}
 
-            labels.append(label)
-            images_id.append(image_id)
-            scores.append(score.item())
-
-    df = {"ImageID": images_id, "LabelName": labels, "Score": scores,
-          "XMin": xmin, "YMin": ymin, "XMax": xmax, "YMax": ymax}
-
-    all_predictions = pd.DataFrame.from_dict(df)
-
-    print("Converting Predictions to Dict")
-    all_predictions_grouped = all_predictions.groupby('ImageID')
-    all_predictions_dict = {}
-    for prediction in tqdm(all_predictions_grouped):
-        image_id, image_prediction = prediction
-        all_predictions_dict[image_id] = image_prediction.reset_index(drop=True)
+        all_predictions_dict[image_id] = pd.DataFrame.from_dict(df)
 
     all_location_annotations = dataset.detections_ann
     all_label_annotations = dataset.image_ann
@@ -88,6 +71,9 @@ def do_oid_evaluation(
     df = {"ImageID": [], "LabelName": [], "Score": [], "XMin": [], "YMin": [], "XMax": [], "YMax": []}
     empty_predictions = pd.DataFrame.from_dict(df)
 
+    print("")
+    print("Processing EVALUATION")
+    print("")
     all_annotations_grouped = all_annotations.groupby('ImageID')
     for groundtruth in tqdm(all_annotations_grouped):
 

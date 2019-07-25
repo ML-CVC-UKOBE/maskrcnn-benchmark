@@ -52,23 +52,19 @@ def find_leaves(hierarchy):
             return hierarchy["LabelName"]
 
 
-def find_parents(hierarchy, p=[]):
-    # TODO self.categories['/m/0ll1f78']
-    # Out[12]: 'Shrimp'
-    # self.parents_hierarchy['/m/0ll1f78']
-    # Out[13]: ['/m/0jbk', '/m/0fbdv']
-    # self.categories['/m/0jbk']
-    # Out[14]: 'Animal'
-    # self.categories['/m/0fbdv']
-    # Out[15]: 'Shellfish'
-
+def find_parents(hierarchy, p=set()):
     parents = p.copy()
     if isinstance(hierarchy, list):
         list_of_child = {}
         for item in hierarchy:
             child = find_parents(item, parents)
             # if isinstance(child, list):
-            list_of_child.update(child)
+            for k in child.keys():
+                if k in list_of_child:
+                    list_of_child[k] = list_of_child[k].union(child[k])
+                else:
+                    list_of_child[k] = child[k]
+            # list_of_child.update(child)
             # else:
             #     list_of_child.append(child)
 
@@ -76,7 +72,7 @@ def find_parents(hierarchy, p=[]):
     elif isinstance(hierarchy, dict):
         if "Subcategory" in hierarchy:
             if hierarchy["LabelName"] != '/m/0bl9f':  # entity
-                parents.append(hierarchy["LabelName"])
+                parents.add(hierarchy["LabelName"])
             list_of_child = find_parents(hierarchy["Subcategory"], parents)
             return list_of_child
         else:
@@ -212,12 +208,6 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         print("-> Creating co-occurrence matrix")
         for image_id, item in tqdm.tqdm(counts.reset_index().groupby('ImageID')):
             labels_in_image = [str(l) for l in item['LabelName'].values]
-            # if len(labels_in_image) > 1:
-            #     ids_in_images = [temp_label_to_id[i] for i in labels_in_image]
-            #     pairs = np.array(np.meshgrid(ids_in_images, ids_in_images)).T.reshape(-1, 2)
-            #     pairs = pairs[np.where(pairs[:, 0] != pairs[:, 1])]
-            #     cooccurrences[pairs] = 1
-
             for i in labels_in_image:
                 for j in labels_in_image:
                     if temp_label_to_id[i] != temp_label_to_id[j]:

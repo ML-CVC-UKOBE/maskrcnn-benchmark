@@ -157,9 +157,7 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
     DatasetCatalog = paths_catalog.DatasetCatalog
     dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
 
-    # TODO to filter the dataset by some keys (only on train)
-    filter_subset = cfg.DATASETS.SUBSET # if is_train else ()
-    # filter_subset = cfg.DATASETS.SUBSET if is_train else ()
+    filter_subset = cfg.DATASETS.SUBSET if is_train else ()
 
     # If bbox aug is enabled in testing, simply set transforms to None and we will apply transforms later
     transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
