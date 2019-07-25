@@ -48,7 +48,7 @@ def train(cfg, local_rank, distributed):
     model, optimizer = amp.initialize(model, optimizer, opt_level=amp_opt_level)
 
     if distributed:
-        #model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+        # model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         model = torch.nn.parallel.DistributedDataParallel(
             model, device_ids=[local_rank], output_device=local_rank,
             # this should be removed if we update BatchNorm stats
@@ -73,6 +73,17 @@ def train(cfg, local_rank, distributed):
         is_distributed=distributed,
         start_iter=arguments["iteration"],
     )
+
+    if cfg.SOLVER.USE_SCHEDULER_DATA_DEPENDENT:
+        # CHANGE LR SCHEDULER BASED ON NUM_ITERS RELATIVE TO DATASET SIZE
+        num_iters = data_loader.batch_sampler.num_iterations
+        scheduler.milestones = tuple([int(num_iters * s) for s in cfg.SOLVER.STEPS_RELATIVE])
+        print("##### USE_SCHEDULER_DATA_DEPENDENT {} epochs ####".format(cfg.SOLVER.MAX_EPOCHS))
+        print("##### NUM ITERS {} ####".format(num_iters))
+        print("##### STEPS RELATIVE {} ####".format(cfg.SOLVER.STEPS_RELATIVE))
+
+        print("##### SCHEDULER MILESTONES (steps) CHANGED from {} to {} ####".format(cfg.SOLVER.STEPS,
+                                                                                     scheduler.milestones))
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 

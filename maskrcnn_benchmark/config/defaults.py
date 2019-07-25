@@ -70,6 +70,8 @@ _C.DATASETS = CN()
 _C.DATASETS.TRAIN = ()
 # List of the dataset names for testing, as present in paths_catalog.py
 _C.DATASETS.TEST = ()
+# SUBSET
+_C.DATASETS.SUBSET = ()
 
 # -----------------------------------------------------------------------------
 # DataLoader
@@ -389,6 +391,11 @@ _C.MODEL.FBNET.RPN_BN_TYPE = ""
 # Solver
 # ---------------------------------------------------------------------------- #
 _C.SOLVER = CN()
+_C.SOLVER.USE_SCHEDULER_DATA_DEPENDENT = 0
+_C.SOLVER.MAX_EPOCHS = 10
+_C.SOLVER.STEPS_RELATIVE = (0.7, 0.9)
+
+
 _C.SOLVER.MAX_ITER = 40000
 
 _C.SOLVER.BASE_LR = 0.001

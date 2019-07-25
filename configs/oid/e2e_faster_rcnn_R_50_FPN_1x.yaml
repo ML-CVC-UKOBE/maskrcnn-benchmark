@@ -24,6 +24,8 @@ MODEL:
 DATASETS:
   TRAIN: ("oid_v5_challenge_train",)
   TEST: ("oid_v5_challenge_val",)
+#  SUBSET: ("no_group_of", "leaves", "groupByCount_0_500", "groupByTopic_5_1")
+  SUBSET: ("no_group_of", "leaves", "groupByCount_0_500", "groupByTopic_5_1")
 DATALOADER:
   SIZE_DIVISIBILITY: 32
   NUM_WORKERS: 4
@@ -35,8 +37,11 @@ SOLVER:
     #MAX_ITER: 110000
 
     # 5 EPOCH 16 BATCH  
-    STEPS: (350000, 500000)
-    MAX_ITER: 550000
+    #STEPS: (350000, 500000)
+    #MAX_ITER: 550000
+
+    USE_SCHEDULER_DATA_DEPENDENT: 1
+    MAX_EPOCHS: 5
 
     IMS_PER_BATCH: 16
 

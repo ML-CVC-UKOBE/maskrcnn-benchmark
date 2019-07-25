@@ -69,7 +69,7 @@ def do_oid_evaluation(
         image_id, image_prediction = prediction
         all_predictions_dict[image_id] = image_prediction.reset_index(drop=True)
 
-    all_location_annotations = dataset.pd_ann
+    all_location_annotations = dataset.detections_ann
     all_label_annotations = dataset.image_ann
     all_label_annotations.rename(columns={'Confidence': 'ConfidenceImageLabel'}, inplace=True)
 
@@ -83,12 +83,12 @@ def do_oid_evaluation(
             categories, evaluate_masks=is_instance_segmentation_eval))
 
     images_processed = 0
-    all_annotations_grouped = all_annotations.groupby('ImageID')
+    n_empty = 0
 
     df = {"ImageID": [], "LabelName": [], "Score": [], "XMin": [], "YMin": [], "XMax": [], "YMax": []}
     empty_predictions = pd.DataFrame.from_dict(df)
-    n_empty = 0
 
+    all_annotations_grouped = all_annotations.groupby('ImageID')
     for groundtruth in tqdm(all_annotations_grouped):
 
         image_id, image_groundtruth = groundtruth

@@ -2,6 +2,7 @@
 import bisect
 import copy
 import logging
+import numpy as np
 
 import torch.utils.data
 from maskrcnn_benchmark.utils.comm import get_world_size
@@ -15,7 +16,7 @@ from .collate_batch import BatchCollator, BBoxAugCollator
 from .transforms import build_transforms
 
 
-def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True):
+def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True, filter_subset=()):
     """
     Arguments:
         dataset_list (list[str]): Contains the names of the datasets, i.e.,
@@ -24,6 +25,7 @@ def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True):
         dataset_catalog (DatasetCatalog): contains the information on how to
             construct a dataset.
         is_train (bool): whether to setup the dataset for training or testing
+        filter_subset (list): list of filters to be applied to the dataset
     """
     if not isinstance(dataset_list, (list, tuple)):
         raise RuntimeError(
@@ -42,6 +44,7 @@ def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True):
             args["use_difficult"] = not is_train
         if data["factory"] == "OpenImagesDataset":
             args["remove_images_without_annotations"] = is_train
+            args["filter_subset"] = filter_subset
 
         args["transforms"] = transforms
         # make dataset from factory
@@ -154,13 +157,25 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
     DatasetCatalog = paths_catalog.DatasetCatalog
     dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
 
+    # TODO to filter the dataset by some keys (only on train)
+    filter_subset = cfg.DATASETS.SUBSET # if is_train else ()
+    # filter_subset = cfg.DATASETS.SUBSET if is_train else ()
+
     # If bbox aug is enabled in testing, simply set transforms to None and we will apply transforms later
     transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
-    datasets = build_dataset(dataset_list, transforms, DatasetCatalog, is_train)
+    datasets = build_dataset(dataset_list, transforms, DatasetCatalog, is_train, filter_subset=filter_subset)
 
     if is_train:
         # save category_id to label name mapping
         save_labels(datasets, cfg.OUTPUT_DIR)
+
+        if cfg.SOLVER.USE_SCHEDULER_DATA_DEPENDENT:
+            # CHANGE NUM_ITERS RELATIVE TO DATASET SIZE
+            n_iters_totals = sum([len(d) for d in datasets]) * cfg.SOLVER.MAX_EPOCHS
+            num_iters = int(np.ceil(n_iters_totals / cfg.SOLVER.IMS_PER_BATCH))
+            print("##### USE_SCHEDULER_DATA_DEPENDENT {} images {} epochs ####".format(sum([len(d) for d in datasets]),
+                                                                                       cfg.SOLVER.MAX_EPOCHS))
+            print("##### NUM ITERS CHANGED from {} to {} ####".format(cfg.SOLVER.MAX_ITER, num_iters))
 
     data_loaders = []
     for dataset in datasets:
