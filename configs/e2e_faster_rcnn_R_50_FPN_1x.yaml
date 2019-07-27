@@ -32,14 +32,19 @@ DATALOADER:
 #  MAX_ITER: 90000
 #  IMS_PER_BATCH: 16
 SOLVER:
-  BASE_LR: 0.00125
+#  BASE_LR: 0.00125
+#  WEIGHT_DECAY: 0.0001
+#  STEPS: (960000, 1280000)
+#  MAX_ITER: 1440000
+#  IMS_PER_BATCH: 1
+  BASE_LR: 0.02
   WEIGHT_DECAY: 0.0001
-  STEPS: (960000, 1280000)
-  MAX_ITER: 1440000
-  IMS_PER_BATCH: 1
-INPUT:
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+  IMS_PER_BATCH: 16
+#INPUT:
   # Size of the smallest side of the image during training
-  MIN_SIZE_TRAIN: (300,)  # (800,)
+#  MIN_SIZE_TRAIN: (300,)  # (800,)
   # Maximum size of the side of the image during training
-  MAX_SIZE_TRAIN: 400
+#  MAX_SIZE_TRAIN: 400
 
