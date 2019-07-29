@@ -205,7 +205,7 @@ _C.MODEL.ROI_HEADS.SCORE_THRESH = 0.01
 _C.MODEL.ROI_HEADS.NMS = 0.5
 # Maximum number of detections to return per image (100 is based on the limit
 # established for the COCO dataset)
-_C.MODEL.ROI_HEADS.DETECTIONS_PER_IMG = 100
+_C.MODEL.ROI_HEADS.DETECTIONS_PER_IMG = 1000
 
 
 _C.MODEL.ROI_BOX_HEAD = CN()
@@ -432,7 +432,7 @@ _C.TEST.EXPECTED_RESULTS_SIGMA_TOL = 4
 # see 2 images per batch
 _C.TEST.IMS_PER_BATCH = 8
 # Number of detections per image
-_C.TEST.DETECTIONS_PER_IMG = 100
+_C.TEST.DETECTIONS_PER_IMG = 1000
 
 # ---------------------------------------------------------------------------- #
 # Test-time augmentations for bounding box detection
@@ -460,6 +460,7 @@ _C.TEST.BBOX_AUG.SCALE_H_FLIP = False
 # Misc options
 # ---------------------------------------------------------------------------- #
 _C.OUTPUT_DIR = "."
+_C.OUTPUT_DIR_SUFFIX = ""
 
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")
 

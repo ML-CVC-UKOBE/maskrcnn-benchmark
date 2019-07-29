@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 import os
+import numpy as np
 
 from .metrics import io_utils
 from .metrics import oid_challenge_evaluation_utils as utils
@@ -25,12 +26,13 @@ def do_oid_evaluation(
     xmax = []
     ymax = []
 
-    print("")
-    print("Preparing BOXES for evaluation")
-    print("")
+    dataset.logger.info("")
+    dataset.logger.info("Preparing BOXES for evaluation")
+    dataset.logger.info("")
 
     all_predictions_dict = {}
     verbose = False
+    expand_leaves_to_hierarchy = True
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
 
@@ -46,7 +48,20 @@ def do_oid_evaluation(
 
         labels = [dataset.contiguous_category_id_to_json_id[l.item()] for l in pred.get_field('labels')]
         scores = [s.item() for s in pred.get_field('scores')]
+        if expand_leaves_to_hierarchy:
+            old_labels = labels.copy()
+            for il, l in enumerate(old_labels):
+                parents = dataset.parents_hierarchy[l]
+                n_parents = len(parents)
+                if n_parents > 0:
+                    labels.extend(list(parents))
+                    scores.extend(np.repeat(scores[il], n_parents))
+                    boxes = np.vstack([boxes, np.repeat(boxes[il, :], n_parents).reshape(4, -1).transpose()])
 
+                # for new_label in parents:
+                #     labels.append(new_label)
+                #     scores.append(new_score)
+                #     boxes = np.vstack([boxes, new_boxes])
         df = {"ImageID": image_id, "LabelName": labels, "Score": scores,
               "XMin": boxes[:, 0], "YMin": boxes[:, 1], "XMax": boxes[:, 2], "YMax": boxes[:, 3]}
 
@@ -71,9 +86,9 @@ def do_oid_evaluation(
     df = {"ImageID": [], "LabelName": [], "Score": [], "XMin": [], "YMin": [], "XMax": [], "YMax": []}
     empty_predictions = pd.DataFrame.from_dict(df)
 
-    print("")
-    print("Processing EVALUATION")
-    print("")
+    dataset.logger.info("")
+    dataset.logger.info("Processing EVALUATION")
+    dataset.logger.info("")
     all_annotations_grouped = all_annotations.groupby('ImageID')
     for groundtruth in tqdm(all_annotations_grouped):
 
@@ -93,11 +108,12 @@ def do_oid_evaluation(
 
         images_processed += 1
 
-    print("EMPTY images: {}".format(n_empty))
+    dataset.logger.info("EMPTY images: {}".format(n_empty))
     metrics = challenge_evaluator.evaluate()
-    print(metrics["OpenImagesDetectionChallenge_Precision/mAP@0.5IOU"])
+    dataset.logger.info(metrics["OpenImagesDetectionChallenge_Precision/mAP@0.5IOU"])
 
-    with open(os.path.join(output_folder, "results.csv"), 'w') as fid:
+    file_output = "results.csv" if expand_leaves_to_hierarchy is False else "results_expanded.csv"
+    with open(os.path.join(output_folder, file_output), 'w') as fid:
         io_utils.write_csv(fid, metrics)
 
 
