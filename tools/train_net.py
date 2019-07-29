@@ -179,7 +179,7 @@ def main():
 
     cfg.freeze()
 
-    output_dir = cfg.OUTPUT_DIR
+    output_dir = cfg.OUTPUT_DIR + cfg.OUTPUT_DIR_SUFFIX
     if output_dir:
         mkdir(output_dir)
 

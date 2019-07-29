@@ -40,7 +40,6 @@ import numpy as np
 import six
 from six.moves import range
 from six.moves import zip
-import tensorflow as tf
 
 from ..core import standard_fields
 from . import label_map_util
@@ -451,6 +450,8 @@ class ObjectDetectionEvaluator(DetectionEvaluator):
       be used as eval metric ops in `tf.estimator.EstimatorSpec`.
     """
     # remove unexpected fields
+    import tensorflow as tf
+
     eval_dict_filtered = dict()
     for key, value in eval_dict.items():
       if key in self._expected_keys:

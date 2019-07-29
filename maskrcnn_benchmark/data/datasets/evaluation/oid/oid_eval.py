@@ -32,7 +32,7 @@ def do_oid_evaluation(
 
     all_predictions_dict = {}
     verbose = False
-    expand_leaves_to_hierarchy = False
+    expand_leaves_to_hierarchy = True
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
 
@@ -112,7 +112,8 @@ def do_oid_evaluation(
     metrics = challenge_evaluator.evaluate()
     dataset.logger.info(metrics["OpenImagesDetectionChallenge_Precision/mAP@0.5IOU"])
 
-    with open(os.path.join(output_folder, "results.csv"), 'w') as fid:
+    file_output = "results.csv" if expand_leaves_to_hierarchy is False else "results_expanded.csv"
+    with open(os.path.join(output_folder, file_output), 'w') as fid:
         io_utils.write_csv(fid, metrics)
 
 

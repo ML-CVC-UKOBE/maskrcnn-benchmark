@@ -124,6 +124,24 @@ class DatasetCatalog(object):
             "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
             "images_info_file": "oid/annotations/detection/challenge-2019-validation-images_info.json",
         },
+        "oid_v5_challenge_train_expanded": {
+            "img_dir": "oid/images/train",
+            "ann_file": "oid/annotations/detection/challenge-2019-train-detection-bbox_expanded_new.csv",
+            "image_ann_file":
+                "oid/annotations/detection/challenge-2019-train-detection-human-imagelabels_expanded_new.csv",
+            "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
+            "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
+            "images_info_file": "oid/annotations/detection/challenge-2019-train-images_info.json",
+        },
+        "oid_v5_challenge_val_expanded": {
+            "img_dir": "oid/images/val",
+            "ann_file": "oid/annotations/detection/challenge-2019-validation-detection-bbox_expanded.csv",
+            "image_ann_file":
+                "oid/annotations/detection/challenge-2019-validation-detection-human-imagelabels_expanded.csv",
+            "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
+            "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
+            "images_info_file": "oid/annotations/detection/challenge-2019-validation-images_info.json",
+        },
         "oid_v5_challenge_test": {
             "img_dir": "oid/images/test",
             "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",

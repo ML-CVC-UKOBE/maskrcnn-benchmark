@@ -144,6 +144,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
 
         image_id = self.id_to_img_map[idx]
         anno = self.annotations[image_id]
+        image_anno = self.image_annotations[image_id]
 
         imagename = image_id + ".jpg"
         img = Image.open(os.path.join(self.root, imagename)).convert('RGB')
@@ -161,6 +162,16 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         classes = [self.json_category_id_to_contiguous_id[c] for c in classes]
         classes = torch.tensor(classes)
         target.add_field("labels", classes)
+
+        image_classes_positive = image_anno[image_anno["Confidence"] == 1]["LabelName"]
+        image_classes_positive = [self.json_category_id_to_contiguous_id[c] for c in image_classes_positive]
+        image_classes_positive = torch.tensor(image_classes_positive)
+        target.add_field("image_labels_positive", image_classes_positive)
+
+        image_classes_negative = image_anno[image_anno["Confidence"] == 0]["LabelName"]
+        image_classes_negative = [self.json_category_id_to_contiguous_id[c] for c in image_classes_negative]
+        image_classes_negative = torch.tensor(image_classes_negative)
+        target.add_field("image_labels_negative", image_classes_negative)
 
         target = target.clip_to_image(remove_empty=True)
         if self._transforms is not None:
