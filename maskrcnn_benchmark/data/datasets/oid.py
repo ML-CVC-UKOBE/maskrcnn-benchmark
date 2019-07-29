@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import collections
 import json
-import time
+# import time
+import logging
 
 import torch
 import torchvision
@@ -85,12 +86,12 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
             remove_images_without_annotations, filter_subset=(), transforms=None
     ):
         super(OpenImagesDataset, self).__init__(root)
-
-        print("Reading OpenImagesDataset Annotations")
+        self.logger = logging.getLogger("maskrcnn_benchmark.trainer")
+        self.logger.info("Reading OpenImagesDataset Annotations")
         self.detections_ann = pd.read_csv(ann_file)
         self.image_ann = pd.read_csv(image_ann_file)
 
-        print("Reading OpenImagesDataset Extras")
+        self.logger.info("Reading OpenImagesDataset Extras")
         self.classname = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
         self.categories = collections.OrderedDict()
         for cat in self.classname.values:
@@ -105,11 +106,11 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         self.leaves_categories = find_leaves(self.hierarchy)
         self.parents_hierarchy = find_parents(self.hierarchy)
 
-        print("Filtering Annotations by subset: {}".format(filter_subset))
+        self.logger.info("Filtering Annotations by subset: {}".format(filter_subset))
         for one_filter_subset in filter_subset:
             self.filter_annotations(one_filter_subset)
 
-        print("Converting Pandas to Dict of Pandas")
+        self.logger.info("Converting Pandas to Dict of Pandas")
         self.annotations = {}
         for groundtruth in tqdm.tqdm(self.detections_ann.groupby('ImageID')):
             image_id, image_groundtruth = groundtruth
@@ -120,7 +121,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
             image_id, image_groundtruth = groundtruth
             self.image_annotations[image_id] = image_groundtruth
 
-        print("Finishing Initialization..")
+        self.logger.info("Finishing Initialization..")
         self.ids = [*self.annotations.keys()]
         # sort indices for reproducible results
         self.ids.sort()
@@ -134,7 +135,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
 
         self.id_to_img_map = {k: v for k, v in enumerate(self.ids)}
         self._transforms = transforms
-        print("Done. {} Images".format(self.__len__()))
+        self.logger.info("Done. {} Images".format(self.__len__()))
 
     def __len__(self):
         return len(self.ids)
@@ -172,30 +173,30 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         return img_data
 
     def _do_filter_annotations_group_of(self, pd1):
-        print('Filter by group of [input: {}]'.format(pd1.shape[0]))
+        self.logger.info('Filter by group of [input: {}]'.format(pd1.shape[0]))
         pd1 = pd1[pd1["IsGroupOf"] == 0]
-        print('Filter by group of [output: {}]'.format(pd1.shape[0]))
+        self.logger.info('Filter by group of [output: {}]'.format(pd1.shape[0]))
         return pd1
 
     def _do_filter_annotations_leaves(self, pd1):
-        print('Filter by leaves [input: {}]'.format(pd1.shape[0]))
+        self.logger.info('Filter by leaves [input: {}]'.format(pd1.shape[0]))
         pd1 = pd1[pd1["LabelName"].isin(self.leaves_categories)]
-        print('Filter by leaves [output: {}]'.format(pd1.shape[0]))
+        self.logger.info('Filter by leaves [output: {}]'.format(pd1.shape[0]))
         return pd1
 
     def _do_filter_annotations_group_by_count(self, pd1, pd2, params):
-        print('Filter by count {} to {} [input: {}]'.format(params[0], params[1], pd1.shape[0]))
+        self.logger.info('Filter by count {} to {} [input: {}]'.format(params[0], params[1], pd1.shape[0]))
         counts = pd1.groupby("LabelName").count().sort_values('ImageID').reset_index()[['LabelName', 'ImageID']]
         labels_to_use = counts[int(params[0]):int(params[1])]['LabelName'].values
         labels_to_use = [str(l) for l in labels_to_use]
         pd1 = pd1[pd1['LabelName'].isin(labels_to_use)]
         pd2 = pd2[pd2['LabelName'].isin(labels_to_use)]
 
-        print('Filter by count {} to {} [output: {}]'.format(params[0], params[1], pd1.shape[0]))
+        self.logger.info('Filter by count {} to {} [output: {}]'.format(params[0], params[1], pd1.shape[0]))
         return pd1, pd2
 
     def _do_filter_annotations_group_by_topic(self, pd1, pd2, params):
-        print('Filter by topic [#topics:{}. select:{}] [input: {}]'.format(params[0], params[1], pd1.shape[0]))
+        self.logger.info('Filter by topic [#topics:{}. select:{}] [input: {}]'.format(params[0], params[1], pd1.shape[0]))
         pd1["count"] = 1
         counts = pd1.groupby(['ImageID', 'LabelName'])['count'].count()
         cooccurrences = np.zeros((len(self.categories), len(self.categories)))
@@ -205,7 +206,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         temp_id_to_label = {
             v: k for k, v in temp_label_to_id.items()
         }
-        print("-> Creating co-occurrence matrix")
+        self.logger.info("-> Creating co-occurrence matrix")
         for image_id, item in tqdm.tqdm(counts.reset_index().groupby('ImageID')):
             labels_in_image = [str(l) for l in item['LabelName'].values]
             for i in labels_in_image:
@@ -218,15 +219,15 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         from sklearn.cluster import KMeans
         kmeans = KMeans(n_clusters=int(params[0]), random_state=0).fit(cooccurrences)
 
-        print("-> label distribution:")
+        self.logger.info("-> label distribution:")
         for i in range(int(params[0])):
-            print("      topic:{} -> {} labels".format(i, np.sum(kmeans.labels_ == i)))
+            self.logger.info("      topic:{} -> {} labels".format(i, np.sum(kmeans.labels_ == i)))
 
         labels_to_use = [str(temp_id_to_label[l]) for l in np.where(kmeans.labels_ == int(params[1]))[0]]
 
         pd1 = pd1[pd1['LabelName'].isin(labels_to_use)]
         pd2 = pd2[pd2['LabelName'].isin(labels_to_use)]
-        print('Filter by topic [#topics:{}. select:{}] [output: {}]'.format(params[0], params[1], pd1.shape[0]))
+        self.logger.info('Filter by topic [#topics:{}. select:{}] [output: {}]'.format(params[0], params[1], pd1.shape[0]))
         return pd1, pd2
 
     def filter_annotations(self, type_filtering):
