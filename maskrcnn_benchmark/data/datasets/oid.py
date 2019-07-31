@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import collections
 import json
+
 # import time
 import logging
-
 import torch
 import torchvision
 
@@ -72,10 +72,13 @@ def find_parents(hierarchy, p=set()):
         return list_of_child
     elif isinstance(hierarchy, dict):
         if "Subcategory" in hierarchy:
+            output = dict()
             if hierarchy["LabelName"] != '/m/0bl9f':  # entity
+                output[hierarchy["LabelName"]] = parents.copy()
                 parents.add(hierarchy["LabelName"])
             list_of_child = find_parents(hierarchy["Subcategory"], parents)
-            return list_of_child
+            output.update(list_of_child)
+            return output
         else:
             return {hierarchy["LabelName"]: parents}
 
@@ -146,6 +149,21 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         anno = self.annotations[image_id]
         image_anno = self.image_annotations[image_id]
 
+        # HACK to reduce the number of boxes:
+        if len(anno) > 500:
+            label_type_in_image = anno['LabelName'].unique()
+            # leaves_in_image = self.leaves_categories.intersection(label_type_in_image)
+            # keep_labels = list()
+            labels_to_delete = set()
+            for l in label_type_in_image:
+                labels_to_delete = labels_to_delete.union(self.parents_hierarchy[l])
+
+            anno = anno[~anno["LabelName"].isin(list(labels_to_delete))]
+
+            if len(anno) > 500:
+                anno = anno.sample(500)
+
+
         imagename = image_id + ".jpg"
         img = Image.open(os.path.join(self.root, imagename)).convert('RGB')
 
@@ -163,15 +181,25 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         classes = torch.tensor(classes)
         target.add_field("labels", classes)
 
-        #image_classes_positive = image_anno[image_anno["Confidence"] == 1]["LabelName"]
-        #image_classes_positive = [self.json_category_id_to_contiguous_id[c] for c in image_classes_positive]
-        #image_classes_positive = torch.tensor(image_classes_positive)
-        #target.add_field("image_labels_positive", image_classes_positive)
+        list_target_positive = []
+        list_target_negative = []
+        for c in classes:
+            image_classes_positive = image_anno[image_anno["Confidence"] == 1]["LabelName"]
+            image_classes_positive = [self.json_category_id_to_contiguous_id[c] for c in image_classes_positive]
+            if len(image_classes_positive) == 0:
+                image_classes_positive = [0]
+            image_classes_positive = torch.tensor(image_classes_positive)
 
-        #image_classes_negative = image_anno[image_anno["Confidence"] == 0]["LabelName"]
-        #image_classes_negative = [self.json_category_id_to_contiguous_id[c] for c in image_classes_negative]
-        #image_classes_negative = torch.tensor(image_classes_negative)
-        #target.add_field("image_labels_negative", image_classes_negative)
+            image_classes_negative = image_anno[image_anno["Confidence"] == 0]["LabelName"]
+            image_classes_negative = [self.json_category_id_to_contiguous_id[c] for c in image_classes_negative]
+            if len(image_classes_negative) == 0:
+                image_classes_negative = [0]
+            image_classes_negative = torch.tensor(image_classes_negative)
+
+            list_target_positive.append(image_classes_positive)
+            list_target_negative.append(image_classes_negative)
+        target.add_field("image_labels_positive", torch.stack(list_target_positive))
+        target.add_field("image_labels_negative", torch.stack(list_target_negative))
 
         target = target.clip_to_image(remove_empty=True)
         if self._transforms is not None:
