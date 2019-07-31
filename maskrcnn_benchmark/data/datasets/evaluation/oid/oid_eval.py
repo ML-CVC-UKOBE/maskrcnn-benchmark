@@ -32,7 +32,7 @@ def do_oid_evaluation(
 
     all_predictions_dict = {}
     verbose = False
-    expand_leaves_to_hierarchy = True
+    expand_leaves_to_hierarchy = False
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
 

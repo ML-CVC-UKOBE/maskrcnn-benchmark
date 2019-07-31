@@ -177,9 +177,10 @@ def main():
                                       cfg.DATASETS.TRAIN[0],
                                       datetime.datetime.now().__format__("%Y-%m-%d_%H:%M"))
 
+        cfg.OUTPUT_DIR += cfg.OUTPUT_DIR_SUFFIX
     cfg.freeze()
 
-    output_dir = cfg.OUTPUT_DIR + cfg.OUTPUT_DIR_SUFFIX
+    output_dir = cfg.OUTPUT_DIR
     if output_dir:
         mkdir(output_dir)
 
