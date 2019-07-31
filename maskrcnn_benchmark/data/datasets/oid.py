@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import collections
 import json
+
 # import time
 import logging
-
 import torch
 import torchvision
 
