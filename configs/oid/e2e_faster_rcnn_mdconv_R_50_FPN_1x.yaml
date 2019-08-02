@@ -33,8 +33,8 @@ DATALOADER:
   SIZE_DIVISIBILITY: 32
   NUM_WORKERS: 4
 DATASETS:
-  TRAIN: ("oid_v5_challenge_train",)
-  TEST: ("oid_v5_challenge_val",)
+  TRAIN: ("oid_v5_challenge_train_expanded",)
+  TEST: ("oid_v5_challenge_val_expanded",)
 #  SUBSET: ("no_group_of", "leaves", "groupByCount_0_500", "groupByTopic_5_1")
 SOLVER:
     BASE_LR: 0.02  # 8 gpu / batch 16

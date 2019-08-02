@@ -21,6 +21,7 @@ MODEL:
   ROI_HEADS:
     USE_FPN: True
   ROI_BOX_HEAD:
+    NUM_CLASSES: 501
     POOLER_RESOLUTION: 7
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
     POOLER_SAMPLING_RATIO: 2
@@ -30,8 +31,8 @@ DATALOADER:
   SIZE_DIVISIBILITY: 32
   NUM_WORKERS: 4
 DATASETS:
-  TRAIN: ("oid_v5_challenge_train",)
-  TEST: ("oid_v5_challenge_val",)
+  TRAIN: ("oid_v5_challenge_train_expanded",)
+  TEST: ("oid_v5_challenge_val_expanded",)
 #  SUBSET: ("no_group_of", "leaves", "groupByCount_0_500", "groupByTopic_5_1")
 SOLVER:
 #    BASE_LR: 0.02  # 8 gpu / batch 16
