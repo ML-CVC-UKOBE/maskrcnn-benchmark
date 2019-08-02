@@ -8,6 +8,7 @@ from .misc import ConvTranspose2d
 from .misc import BatchNorm2d
 from .misc import interpolate
 from .nms import nms
+from .soft_nms import soft_nms
 from .roi_align import ROIAlign
 from .roi_align import roi_align
 from .roi_pool import ROIPool
@@ -19,9 +20,9 @@ from .dcn.deform_conv_module import DeformConv, ModulatedDeformConv, ModulatedDe
 from .dcn.deform_pool_func import deform_roi_pooling
 from .dcn.deform_pool_module import DeformRoIPooling, DeformRoIPoolingPack, ModulatedDeformRoIPoolingPack
 
-
 __all__ = [
     "nms",
+    "soft_nms",
     "roi_align",
     "ROIAlign",
     "roi_pool",
@@ -44,4 +45,3 @@ __all__ = [
     'DeformRoIPoolingPack',
     'ModulatedDeformRoIPoolingPack',
 ]
-
