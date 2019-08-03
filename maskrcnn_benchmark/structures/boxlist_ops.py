@@ -4,6 +4,7 @@ import torch
 from .bounding_box import BoxList
 
 from maskrcnn_benchmark.layers import nms as _box_nms
+from maskrcnn_benchmark.layers import soft_nms as _soft_box_nms
 
 
 def boxlist_nms(boxlist, nms_thresh, max_proposals=-1, score_field="scores"):
@@ -18,13 +19,15 @@ def boxlist_nms(boxlist, nms_thresh, max_proposals=-1, score_field="scores"):
             after non-maximum suppression
         score_field (str)
     """
+    sigma = 0.3
     if nms_thresh <= 0:
         return boxlist
     mode = boxlist.mode
     boxlist = boxlist.convert("xyxy")
     boxes = boxlist.bbox
     score = boxlist.get_field(score_field)
-    keep = _box_nms(boxes, score, nms_thresh)
+    #keep2 = _box_nms(boxes, score, nms_thresh)
+    keep = _soft_box_nms(boxes.cpu(), score.cpu(), nms_thresh, sigma)[0]
     if max_proposals > 0:
         keep = keep[: max_proposals]
     boxlist = boxlist[keep]

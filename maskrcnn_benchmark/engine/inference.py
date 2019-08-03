@@ -27,6 +27,7 @@ def compute_on_dataset(model, data_loader, device, timer=None):
             if cfg.TEST.BBOX_AUG.ENABLED:
                 output = im_detect_bbox_aug(model, images, device)
             else:
+                print("COMPUTING ON DATASET")
                 output = model((images.to(device)))
             if timer:
                 if not cfg.MODEL.DEVICE == 'cpu':
