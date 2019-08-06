@@ -17,8 +17,8 @@ import os.path
 
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 
-pd.set_option('display.max_rows', 20)
-# pd.set_option('display.max_columns', 500)
+pd.set_option('display.max_rows', 50)
+pd.set_option('display.max_columns', 50)
 pd.set_option('display.width', 1000)
 
 
@@ -86,13 +86,14 @@ def find_parents(hierarchy, p=set()):
 class OpenImagesDataset(torchvision.datasets.VisionDataset):
     def __init__(
             self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
-            remove_images_without_annotations, filter_subset=(), transforms=None
+            remove_images_without_annotations, filter_subset=(), use_image_labels=False, transforms=None
     ):
         super(OpenImagesDataset, self).__init__(root)
         self.logger = logging.getLogger("maskrcnn_benchmark.trainer")
         self.logger.info("Reading OpenImagesDataset Annotations")
         self.detections_ann = pd.read_csv(ann_file)
         self.image_ann = pd.read_csv(image_ann_file)
+        self.use_image_labels = use_image_labels
 
         self.logger.info("Reading OpenImagesDataset Extras")
         self.classname = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
@@ -181,25 +182,26 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         classes = torch.tensor(classes)
         target.add_field("labels", classes)
 
-        list_target_positive = []
-        list_target_negative = []
-        for c in classes:
-            image_classes_positive = image_anno[image_anno["Confidence"] == 1]["LabelName"]
-            image_classes_positive = [self.json_category_id_to_contiguous_id[c] for c in image_classes_positive]
-            if len(image_classes_positive) == 0:
-                image_classes_positive = [0]
-            image_classes_positive = torch.tensor(image_classes_positive)
+        if self.use_image_labels:
+            list_target_positive = []
+            list_target_negative = []
+            for c in classes:
+                image_classes_positive = image_anno[image_anno["Confidence"] == 1]["LabelName"]
+                image_classes_positive = [self.json_category_id_to_contiguous_id[cc] for cc in image_classes_positive]
+                if len(image_classes_positive) == 0:
+                    image_classes_positive = [0]
+                image_classes_positive = torch.tensor(image_classes_positive, dtype=torch.int64)
 
-            image_classes_negative = image_anno[image_anno["Confidence"] == 0]["LabelName"]
-            image_classes_negative = [self.json_category_id_to_contiguous_id[c] for c in image_classes_negative]
-            if len(image_classes_negative) == 0:
-                image_classes_negative = [0]
-            image_classes_negative = torch.tensor(image_classes_negative)
+                image_classes_negative = image_anno[image_anno["Confidence"] == 0]["LabelName"]
+                image_classes_negative = [self.json_category_id_to_contiguous_id[cc] for cc in image_classes_negative]
+                if len(image_classes_negative) == 0:
+                    image_classes_negative = [0]
+                image_classes_negative = torch.tensor(image_classes_negative, dtype=torch.int64)
 
-            list_target_positive.append(image_classes_positive)
-            list_target_negative.append(image_classes_negative)
-        target.add_field("image_labels_positive", torch.stack(list_target_positive))
-        target.add_field("image_labels_negative", torch.stack(list_target_negative))
+                list_target_positive.append(image_classes_positive)
+                list_target_negative.append(image_classes_negative)
+            target.add_field("image_labels_positive", torch.stack(list_target_positive))
+            target.add_field("image_labels_negative", torch.stack(list_target_negative))
 
         target = target.clip_to_image(remove_empty=True)
         if self._transforms is not None:

@@ -13,6 +13,7 @@ class BatchCollator(object):
         self.size_divisible = size_divisible
 
     def __call__(self, batch):
+        # TODO change to_image_list to use also targets...
         transposed_batch = list(zip(*batch))
         images = to_image_list(transposed_batch[0], self.size_divisible)
         targets = transposed_batch[1]
