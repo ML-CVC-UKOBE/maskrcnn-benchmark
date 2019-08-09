@@ -108,8 +108,7 @@ class FastRCNNLossComputation(object):
             # TODO
             # proposals_per_image.add_field("parents", targets_per_image.get_field('parents'))
 
-
-        use_loss_multiclass =True if 'image_labels_positive' in targets[0].fields() else False
+        use_loss_multiclass = True if 'image_labels_positive' in targets[0].fields() else False
 
         self._labels_per_image = []
         self._proposals_from_image = []
@@ -161,6 +160,7 @@ class FastRCNNLossComputation(object):
         proposals = self._proposals
 
         labels = cat([proposal.get_field("labels") for proposal in proposals], dim=0)
+        labels_set = set(labels.tolist())
         regression_targets = cat([proposal.get_field("regression_targets") for proposal in proposals], dim=0)
         # pos_image_labels = cat([proposal.get_field("image_labels_positive") for proposal in proposals], dim=0)
         # neg_image_labels = cat([proposal.get_field("image_labels_negative") for proposal in proposals], dim=0)
@@ -171,7 +171,7 @@ class FastRCNNLossComputation(object):
             for idx, cll in enumerate(most_probable_class):
                 cl = cll.item()
                 if confidence_class[idx] < 0.5 or \
-                        (cl == 0 or
+                        (cl in labels_set or
                          cl in self._labels_per_image[self._proposals_from_image[idx]]["positive"] or
                          cl in self._labels_per_image[self._proposals_from_image[idx]]["negative"]):
                     keep.append(idx)
@@ -190,7 +190,6 @@ class FastRCNNLossComputation(object):
         sampled_pos_inds_subset = torch.nonzero(labels > 0).squeeze(1)
         labels_pos = labels[sampled_pos_inds_subset]
         if self.cls_agnostic_bbox_reg:
-
             map_inds = torch.tensor([4, 5, 6, 7], device=device)
         else:
             map_inds = 4 * labels_pos[:, None] + torch.tensor(
