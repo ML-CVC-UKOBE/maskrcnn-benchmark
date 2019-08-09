@@ -91,7 +91,6 @@ def do_oid_evaluation(
     dataset.logger.info("")
     all_annotations_grouped = all_annotations.groupby('ImageID')
     for groundtruth in tqdm(all_annotations_grouped):
-
         image_id, image_groundtruth = groundtruth
         groundtruth_dictionary = utils.build_groundtruth_dictionary(image_groundtruth, class_label_map)
 

@@ -178,7 +178,7 @@ class FastRCNNLossComputation(object):
                 else:
                     # check score? Means that it is not annotated. Cant check
                     pass
-            # print(len(keep))
+
             class_logits = class_logits[keep, :]
             labels = labels[keep]
 

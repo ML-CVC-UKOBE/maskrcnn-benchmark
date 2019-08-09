@@ -172,10 +172,11 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
         if cfg.SOLVER.USE_SCHEDULER_DATA_DEPENDENT:
             # CHANGE NUM_ITERS RELATIVE TO DATASET SIZE
             n_iters_totals = sum([len(d) for d in datasets]) * cfg.SOLVER.MAX_EPOCHS
+            logger = logging.getLogger("maskrcnn_benchmark.trainer")
             num_iters = int(np.ceil(n_iters_totals / cfg.SOLVER.IMS_PER_BATCH))
-            logging.info("##### USE_SCHEDULER_DATA_DEPENDENT {} images {} epochs ####".format(
+            logger.info("##### USE_SCHEDULER_DATA_DEPENDENT {} images {} epochs ####".format(
                 sum([len(d) for d in datasets]), cfg.SOLVER.MAX_EPOCHS))
-            logging.info("##### NUM ITERS CHANGED from {} to {} ####".format(cfg.SOLVER.MAX_ITER, num_iters))
+            logger.info("##### NUM ITERS CHANGED from {} to {} ####".format(cfg.SOLVER.MAX_ITER, num_iters))
 
     data_loaders = []
     for dataset in datasets:
