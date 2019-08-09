@@ -10,6 +10,7 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 import datetime
 import argparse
 import os
+import logging
 
 import torch
 from maskrcnn_benchmark.config import cfg
@@ -78,12 +79,12 @@ def train(cfg, local_rank, distributed):
         # CHANGE LR SCHEDULER BASED ON NUM_ITERS RELATIVE TO DATASET SIZE
         num_iters = data_loader.batch_sampler.num_iterations
         scheduler.milestones = tuple([int(num_iters * s) for s in cfg.SOLVER.STEPS_RELATIVE])
-        print("##### USE_SCHEDULER_DATA_DEPENDENT {} epochs ####".format(cfg.SOLVER.MAX_EPOCHS))
-        print("##### NUM ITERS {} ####".format(num_iters))
-        print("##### STEPS RELATIVE {} ####".format(cfg.SOLVER.STEPS_RELATIVE))
+        logging.info("##### USE_SCHEDULER_DATA_DEPENDENT {} epochs ####".format(cfg.SOLVER.MAX_EPOCHS))
+        logging.info("##### NUM ITERS {} ####".format(num_iters))
+        logging.info("##### STEPS RELATIVE {} ####".format(cfg.SOLVER.STEPS_RELATIVE))
 
-        print("##### SCHEDULER MILESTONES (steps) CHANGED from {} to {} ####".format(cfg.SOLVER.STEPS,
-                                                                                     scheduler.milestones))
+        logging.info("##### SCHEDULER MILESTONES (steps) CHANGED from {} to {} ####".format(cfg.SOLVER.STEPS,
+                                                                                            scheduler.milestones))
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 

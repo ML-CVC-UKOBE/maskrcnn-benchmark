@@ -16,7 +16,7 @@ from .collate_batch import BatchCollator, BBoxAugCollator
 from .transforms import build_transforms
 
 
-def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True, filter_subset=()):
+def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True, filter_subset=(), use_image_labels=False):
     """
     Arguments:
         dataset_list (list[str]): Contains the names of the datasets, i.e.,
@@ -45,6 +45,7 @@ def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True, filt
         if data["factory"] == "OpenImagesDataset":
             args["remove_images_without_annotations"] = is_train
             args["filter_subset"] = filter_subset
+            args["use_image_labels"] = use_image_labels
 
         args["transforms"] = transforms
         # make dataset from factory
@@ -158,10 +159,11 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
     dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
 
     filter_subset = cfg.DATASETS.SUBSET if is_train else ()
+    use_image_labels = cfg.DATASETS.USE_IMAGE_LABELS
 
     # If bbox aug is enabled in testing, simply set transforms to None and we will apply transforms later
     transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
-    datasets = build_dataset(dataset_list, transforms, DatasetCatalog, is_train, filter_subset=filter_subset)
+    datasets = build_dataset(dataset_list, transforms, DatasetCatalog, is_train, filter_subset=filter_subset, use_image_labels=use_image_labels)
 
     if is_train:
         # save category_id to label name mapping
@@ -171,9 +173,9 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
             # CHANGE NUM_ITERS RELATIVE TO DATASET SIZE
             n_iters_totals = sum([len(d) for d in datasets]) * cfg.SOLVER.MAX_EPOCHS
             num_iters = int(np.ceil(n_iters_totals / cfg.SOLVER.IMS_PER_BATCH))
-            print("##### USE_SCHEDULER_DATA_DEPENDENT {} images {} epochs ####".format(sum([len(d) for d in datasets]),
-                                                                                       cfg.SOLVER.MAX_EPOCHS))
-            print("##### NUM ITERS CHANGED from {} to {} ####".format(cfg.SOLVER.MAX_ITER, num_iters))
+            logging.info("##### USE_SCHEDULER_DATA_DEPENDENT {} images {} epochs ####".format(
+                sum([len(d) for d in datasets]), cfg.SOLVER.MAX_EPOCHS))
+            logging.info("##### NUM ITERS CHANGED from {} to {} ####".format(cfg.SOLVER.MAX_ITER, num_iters))
 
     data_loaders = []
     for dataset in datasets:

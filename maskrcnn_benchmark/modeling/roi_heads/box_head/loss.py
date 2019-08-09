@@ -40,7 +40,10 @@ class FastRCNNLossComputation(object):
         match_quality_matrix = boxlist_iou(target, proposal)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Fast RCNN only need "labels" field for selecting the targets
-        target = target.copy_with_fields("labels")
+
+        # TODO check if needed
+        # target = target.copy_with_fields("labels")
+
         # get the targets corresponding GT for each proposal
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
@@ -95,14 +98,20 @@ class FastRCNNLossComputation(object):
 
         proposals = list(proposals)
         # add corresponding label and regression_targets information to the bounding boxes
-        for labels_per_image, regression_targets_per_image, proposals_per_image in zip(
-            labels, regression_targets, proposals
+        for labels_per_image, regression_targets_per_image, proposals_per_image, targets_per_image in zip(
+            labels, regression_targets, proposals, targets
         ):
             proposals_per_image.add_field("labels", labels_per_image)
-            proposals_per_image.add_field(
-                "regression_targets", regression_targets_per_image
-            )
+            proposals_per_image.add_field("regression_targets", regression_targets_per_image)
+            # proposals_per_image.add_field("image_labels_positive", targets_per_image.get_field('image_labels_positive').repeat(len(labels_per_image), 1))
+            # proposals_per_image.add_field("image_labels_negative", targets_per_image.get_field('image_labels_negative').repeat(len(labels_per_image), 1))
+            # TODO
+            # proposals_per_image.add_field("parents", targets_per_image.get_field('parents'))
 
+        use_loss_multiclass = True if 'image_labels_positive' in targets[0].fields() else False
+
+        self._labels_per_image = []
+        self._proposals_from_image = []
         # distributed sampled proposals, that were obtained on all feature maps
         # concatenated via the fg_bg_sampler, into individual feature map levels
         for img_idx, (pos_inds_img, neg_inds_img) in enumerate(
@@ -112,6 +121,18 @@ class FastRCNNLossComputation(object):
             proposals_per_image = proposals[img_idx][img_sampled_inds]
             proposals[img_idx] = proposals_per_image
 
+            if use_loss_multiclass:
+                pos_image_set = set(targets[img_idx].get_field('image_labels_positive')[0].tolist())
+                neg_image_set = set(targets[img_idx].get_field('image_labels_negative')[0].tolist())
+                neg_image_set.discard(0)
+                self._labels_per_image.append({
+                    "positive": pos_image_set,
+                    "negative": neg_image_set})
+                self._proposals_from_image.append(torch.ones(img_sampled_inds.size(), dtype=torch.int64)*img_idx)
+        if use_loss_multiclass:
+            self._proposals_from_image = cat(self._proposals_from_image, dim=0)
+        else:
+            self._proposals_from_image = None
         self._proposals = proposals
         return proposals
 
@@ -139,9 +160,27 @@ class FastRCNNLossComputation(object):
         proposals = self._proposals
 
         labels = cat([proposal.get_field("labels") for proposal in proposals], dim=0)
-        regression_targets = cat(
-            [proposal.get_field("regression_targets") for proposal in proposals], dim=0
-        )
+        labels_set = set(labels.tolist())
+        regression_targets = cat([proposal.get_field("regression_targets") for proposal in proposals], dim=0)
+        # pos_image_labels = cat([proposal.get_field("image_labels_positive") for proposal in proposals], dim=0)
+        # neg_image_labels = cat([proposal.get_field("image_labels_negative") for proposal in proposals], dim=0)
+        if self._proposals_from_image is not None:
+            confidence_class, most_probable_class = F.softmax(class_logits, dim=1).max(1)
+
+            keep = []
+            for idx, cll in enumerate(most_probable_class):
+                cl = cll.item()
+                if confidence_class[idx] < 0.5 or \
+                        (cl in labels_set or
+                         cl in self._labels_per_image[self._proposals_from_image[idx]]["positive"] or
+                         cl in self._labels_per_image[self._proposals_from_image[idx]]["negative"]):
+                    keep.append(idx)
+                else:
+                    # check score? Means that it is not annotated. Cant check
+                    pass
+            # print(len(keep))
+            class_logits = class_logits[keep, :]
+            labels = labels[keep]
 
         classification_loss = F.cross_entropy(class_logits, labels)
 
@@ -151,7 +190,6 @@ class FastRCNNLossComputation(object):
         sampled_pos_inds_subset = torch.nonzero(labels > 0).squeeze(1)
         labels_pos = labels[sampled_pos_inds_subset]
         if self.cls_agnostic_bbox_reg:
-
             map_inds = torch.tensor([4, 5, 6, 7], device=device)
         else:
             map_inds = 4 * labels_pos[:, None] + torch.tensor(

@@ -3,6 +3,7 @@ import datetime
 import logging
 import time
 
+import psutil
 import torch
 import torch.distributed as dist
 
@@ -99,7 +100,8 @@ def do_train(
                         "iter: {iter}",
                         "{meters}",
                         "lr: {lr:.6f}",
-                        "max mem: {memory:.0f}",
+                        "max gpu mem: {memory:.0f}",
+                        "max ram mem: {ram:.0f}",
                     ]
                 ).format(
                     eta=eta_string,
@@ -107,6 +109,7 @@ def do_train(
                     meters=str(meters),
                     lr=optimizer.param_groups[0]["lr"],
                     memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
+                    ram=psutil.virtual_memory().used / 1024.0 / 1024.0
                 )
             )
         if iteration % checkpoint_period == 0:

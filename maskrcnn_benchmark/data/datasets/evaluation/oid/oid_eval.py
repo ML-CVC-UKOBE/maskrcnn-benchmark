@@ -31,7 +31,7 @@ def do_oid_evaluation(
     dataset.logger.info("")
 
     all_predictions_dict = {}
-    verbose = False
+    verbose = True
     expand_leaves_to_hierarchy = True
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
@@ -39,8 +39,8 @@ def do_oid_evaluation(
         if verbose:
             img, gt, ii = dataset[i]
             show_boxes(img, [gt], "GT", dataset.contiguous_category_id_to_json_id, dataset.categories)
-            img, gt, ii = dataset[i]
-            show_boxes(img, [pred], "PRED", dataset.contiguous_category_id_to_json_id, dataset.categories)
+            # img, gt, ii = dataset[i]
+            # show_boxes(img, [pred], "PRED", dataset.contiguous_category_id_to_json_id, dataset.categories)
 
         boxes = pred.bbox.cpu().numpy()
         boxes /= (pred.size * 2)
@@ -72,7 +72,7 @@ def do_oid_evaluation(
     all_label_annotations.rename(columns={'Confidence': 'ConfidenceImageLabel'}, inplace=True)
 
     is_instance_segmentation_eval = False
-    all_annotations = pd.concat([all_location_annotations, all_label_annotations])
+    all_annotations = pd.concat([all_location_annotations, all_label_annotations], sort=False)
 
     class_label_map = dataset.json_category_id_to_contiguous_id
     categories = [{'id': k, 'name': v} for k, v in dataset.contiguous_category_id_to_json_id.items()]
@@ -174,4 +174,4 @@ def show_boxes(images, proposals, title, labels_i_to_id, labels_id_to_name):
             cv2.putText(img, text, (r[1], r[0] + baseline * 3), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
     cv2.imshow(title, img)
-    cv2.waitKey(10)
+    cv2.waitKey(0)
