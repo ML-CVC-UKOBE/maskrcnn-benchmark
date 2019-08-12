@@ -170,10 +170,11 @@ class FastRCNNLossComputation(object):
             keep = []
             for idx, cll in enumerate(most_probable_class):
                 cl = cll.item()
-                if confidence_class[idx] < 0.5 or \
-                        (cl in labels_set or
-                         cl in self._labels_per_image[self._proposals_from_image[idx]]["positive"] or
-                         cl in self._labels_per_image[self._proposals_from_image[idx]]["negative"]):
+                if (confidence_class[idx] < 0.9 or
+                    labels[idx] > 0 or
+                    cl in labels_set or
+                    cl in self._labels_per_image[self._proposals_from_image[idx]]["positive"] or
+                    cl in self._labels_per_image[self._proposals_from_image[idx]]["negative"]):
                     keep.append(idx)
                 else:
                     # check score? Means that it is not annotated. Cant check
