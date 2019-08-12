@@ -88,7 +88,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
             self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
             remove_images_without_annotations, filter_subset=(), use_image_labels=False, transforms=None
     ):
-        self.fast_init_slow_train = False
+        self.fast_init_slow_train = True
 
         super(OpenImagesDataset, self).__init__(root)
         self.logger = logging.getLogger("maskrcnn_benchmark.trainer")

@@ -1,3 +1,4 @@
+ipython
 ninja
 yacs
 cython
@@ -5,6 +6,7 @@ matplotlib
 tqdm
 torch
 torchvision
+pandas==0.24
 psutil
 opencv-python
 tensorflow
