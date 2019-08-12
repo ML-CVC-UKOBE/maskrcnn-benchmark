@@ -88,6 +88,8 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
             self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
             remove_images_without_annotations, filter_subset=(), use_image_labels=False, transforms=None
     ):
+        self.fast_init_slow_train = False
+
         super(OpenImagesDataset, self).__init__(root)
         self.logger = logging.getLogger("maskrcnn_benchmark.trainer")
         self.logger.info("Reading OpenImagesDataset Annotations")
@@ -114,21 +116,25 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         for one_filter_subset in filter_subset:
             self.filter_annotations(one_filter_subset)
 
-        self.logger.info("Converting Pandas to Dict of Pandas")
-        self.annotations = {}
-        for groundtruth in tqdm.tqdm(self.detections_ann.groupby('ImageID')):
-            image_id, image_groundtruth = groundtruth
-            self.annotations[image_id] = image_groundtruth
+        if self.fast_init_slow_train:
+            self.logger.info("### CAUTION. DEBUGGING PURPOSES --> fast init slow train ###")
+            self.ids = self.detections_ann["ImageID"].unique()
+        else:
+            self.logger.info("Converting Pandas to Dict of Pandas")
+            self.annotations = {}
+            for groundtruth in tqdm.tqdm(self.detections_ann.groupby('ImageID')):
+                image_id, image_groundtruth = groundtruth
+                self.annotations[image_id] = image_groundtruth
 
-        self.image_annotations = {}
-        for groundtruth in tqdm.tqdm(self.image_ann.groupby('ImageID')):
-            image_id, image_groundtruth = groundtruth
-            self.image_annotations[image_id] = image_groundtruth
+            self.image_annotations = {}
+            for groundtruth in tqdm.tqdm(self.image_ann.groupby('ImageID')):
+                image_id, image_groundtruth = groundtruth
+                self.image_annotations[image_id] = image_groundtruth
 
-        self.logger.info("Finishing Initialization..")
-        self.ids = [*self.annotations.keys()]
-        # sort indices for reproducible results
+            self.ids = [*self.annotations.keys()]
+            # sort indices for reproducible results
         self.ids.sort()
+        self.logger.info("Finishing Initialization..")
 
         self.json_category_id_to_contiguous_id = {
             v: i + 1 for i, v in enumerate(self.categories)
@@ -147,8 +153,13 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
     def __getitem__(self, idx):
 
         image_id = self.id_to_img_map[idx]
-        anno = self.annotations[image_id]
-        image_anno = self.image_annotations[image_id]
+
+        if self.fast_init_slow_train:
+            anno = self.detections_ann[self.detections_ann["ImageID"] == image_id]
+            image_anno = self.image_ann[self.image_ann["ImageID"] == image_id]
+        else:
+            anno = self.annotations[image_id]
+            image_anno = self.image_annotations[image_id]
 
         # HACK to reduce the number of boxes:
         if len(anno) > 500:
@@ -163,7 +174,6 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
 
             if len(anno) > 500:
                 anno = anno.sample(500)
-
 
         imagename = image_id + ".jpg"
         img = Image.open(os.path.join(self.root, imagename)).convert('RGB')
