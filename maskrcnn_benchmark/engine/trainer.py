@@ -7,7 +7,7 @@ import psutil
 import torch
 import torch.distributed as dist
 
-from maskrcnn_benchmark.utils.comm import get_world_size
+from maskrcnn_benchmark.utils.comm import get_world_size, is_main_process
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger
 
 from apex import amp
@@ -55,11 +55,26 @@ def do_train(
     model.train()
     start_training_time = time.time()
     end = time.time()
+    '''
+    import gc
+    import pandas as pd
     from pympler import tracker
-    tr = tracker.SummaryTracker()
+    if is_main_process():
+        tr = tracker.SummaryTracker()
+    '''
+
+    #if is_main_process():
+    #    print("Object, ID, Length", file=open("object.log", "a"))
+
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
 
-        tr.print_diff()
+    #    if is_main_process():
+    #        print(tr.print_diff(), file=open("object.log", "a"))
+
+    #    if is_main_process():
+    #        for obj in gc.get_objects():
+    #            if isinstance(obj, (list, set, pd.Series, pd.DataFrame)):
+    #                print("{}, {}, {}".format(type(obj), id(obj), len(obj)), file=open("object.log", "a"))
 
         if any(len(target) < 1 for target in targets):
             logger.error("Iteration={iteration + 1} || Image Ids used for training {_} || targets Length={[len(target) for target in targets]}" )

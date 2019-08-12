@@ -155,8 +155,8 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         image_id = self.id_to_img_map[idx]
 
         if self.fast_init_slow_train:
-            anno = self.detections_ann[self.detections_ann["ImageID"] == image_id]
-            image_anno = self.image_ann[self.image_ann["ImageID"] == image_id]
+            anno = self.detections_ann[self.detections_ann["ImageID"] == image_id].copy()
+            image_anno = self.image_ann[self.image_ann["ImageID"] == image_id].copy()
         else:
             anno = self.annotations[image_id]
             image_anno = self.image_annotations[image_id]
