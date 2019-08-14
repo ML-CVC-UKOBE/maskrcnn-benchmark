@@ -55,14 +55,8 @@ def do_train(
     model.train()
     start_training_time = time.time()
     end = time.time()
-    import gc
-    import pandas as pd
-    from pympler import tracker
-    if is_main_process():
-        tr = tracker.SummaryTracker()
 
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
-
 
         if any(len(target) < 1 for target in targets):
             logger.error("Iteration={iteration + 1} || Image Ids used for training {_} || targets Length={[len(target) for target in targets]}" )
@@ -101,8 +95,6 @@ def do_train(
         eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
 
         if iteration % 20 == 0 or iteration == max_iter:
-            if is_main_process():
-                tr.print_diff()
             logger.info(
                 meters.delimiter.join(
                     [
@@ -111,7 +103,7 @@ def do_train(
                         "{meters}",
                         "lr: {lr:.6f}",
                         "max gpu mem: {memory:.0f}",
-                        "max ram mem: {ram:.0f}",
+                        "Avail ram mem: {ram:.0f}",
                     ]
                 ).format(
                     eta=eta_string,
@@ -119,7 +111,7 @@ def do_train(
                     meters=str(meters),
                     lr=optimizer.param_groups[0]["lr"],
                     memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
-                    ram=psutil.virtual_memory().used / 1024.0 / 1024.0
+                    ram=psutil.virtual_memory().available / 1024.0 / 1024.0
                 )
             )
         if iteration % checkpoint_period == 0:
