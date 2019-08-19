@@ -88,7 +88,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
             self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
             remove_images_without_annotations, filter_subset=(), use_image_labels=False, transforms=None
     ):
-        self.fast_init_slow_train = True
+        self.fast_init_slow_train = False
 
         super(OpenImagesDataset, self).__init__(root)
         self.logger = logging.getLogger("maskrcnn_benchmark.trainer")
@@ -155,8 +155,8 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         image_id = self.id_to_img_map[idx]
 
         if self.fast_init_slow_train:
-            anno = self.detections_ann[self.detections_ann["ImageID"] == image_id].copy()
-            image_anno = self.image_ann[self.image_ann["ImageID"] == image_id].copy()
+            anno = self.detections_ann[self.detections_ann["ImageID"] == image_id]
+            image_anno = self.image_ann[self.image_ann["ImageID"] == image_id]
         else:
             anno = self.annotations[image_id]
             image_anno = self.image_annotations[image_id]

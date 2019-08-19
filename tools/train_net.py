@@ -77,16 +77,24 @@ def train(cfg, local_rank, distributed):
     )
 
 
+
     if cfg.SOLVER.USE_SCHEDULER_DATA_DEPENDENT:
-        # CHANGE LR SCHEDULER BASED ON NUM_ITERS RELATIVE TO DATASET SIZE
-        num_iters = data_loader.batch_sampler.num_iterations
-        scheduler.milestones = tuple([int(num_iters * s) for s in cfg.SOLVER.STEPS_RELATIVE])
-        logger = logging.getLogger("maskrcnn_benchmark.trainer")
-        logger.info("##### USE_SCHEDULER_DATA_DEPENDENT {} epochs ####".format(cfg.SOLVER.MAX_EPOCHS))
-        logger.info("##### NUM ITERS {} ####".format(num_iters))
-        logger.info("##### STEPS RELATIVE {} ####".format(cfg.SOLVER.STEPS_RELATIVE))
-        logger.info("##### SCHEDULER MILESTONES (steps) CHANGED from {} to {} ####".format(cfg.SOLVER.STEPS,
+        if cfg.SOLVER.SCHEDULER == "multi_step":
+            # CHANGE LR SCHEDULER BASED ON NUM_ITERS RELATIVE TO DATASET SIZE
+            num_iters = data_loader.batch_sampler.num_iterations
+            scheduler.milestones = tuple([int(num_iters * s) for s in cfg.SOLVER.STEPS_RELATIVE])
+            logger = logging.getLogger("maskrcnn_benchmark.trainer")
+            logger.info("##### USE_SCHEDULER_DATA_DEPENDENT {} epochs ####".format(cfg.SOLVER.MAX_EPOCHS))
+            logger.info("##### NUM ITERS {} ####".format(num_iters))
+            logger.info("##### STEPS RELATIVE {} ####".format(cfg.SOLVER.STEPS_RELATIVE))
+            logger.info("##### SCHEDULER MILESTONES (steps) CHANGED from {} to {} ####".format(cfg.SOLVER.STEPS,
                                                                                             scheduler.milestones))
+        elif cfg.SOLVER.SCHEDULER == "cosine":
+            num_iters = data_loader.batch_sampler.num_iterations
+            logger = logging.getLogger("maskrcnn_benchmark.trainer")
+            logger.info("##### COSINE SCHEDULER ####")
+            logger.info("##### {} epochs ####".format(cfg.SOLVER.MAX_EPOCHS))
+            logger.info("##### NUM ITERS {} ####".format(num_iters))
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 

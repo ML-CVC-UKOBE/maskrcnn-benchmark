@@ -392,6 +392,8 @@ _C.MODEL.FBNET.RPN_BN_TYPE = ""
 # Solver
 # ---------------------------------------------------------------------------- #
 _C.SOLVER = CN()
+_C.SOLVER.SCHEDULER = "multi_step" # or "cosine"
+_C.SOLVER.ETA_MIN = 0
 _C.SOLVER.USE_SCHEDULER_DATA_DEPENDENT = 0
 _C.SOLVER.MAX_EPOCHS = 10
 _C.SOLVER.STEPS_RELATIVE = (0.7, 0.9)
