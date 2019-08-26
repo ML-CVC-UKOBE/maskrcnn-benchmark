@@ -83,14 +83,15 @@ def find_parents(hierarchy, p=set()):
             return {hierarchy["LabelName"]: parents}
 
 
-class OpenImagesDataset(torchvision.datasets.VisionDataset):
+class OpenImagesDataset(torch.utils.data.Dataset):
     def __init__(
             self, ann_file, classname_file, hierarchy_file, image_ann_file, images_info_file, root,
             remove_images_without_annotations, filter_subset=(), use_image_labels=False, transforms=None
     ):
         self.fast_init_slow_train = False
 
-        super(OpenImagesDataset, self).__init__(root)
+        super(OpenImagesDataset, self).__init__()
+        self.root = root
         self.logger = logging.getLogger("maskrcnn_benchmark.trainer")
         self.logger.info("Reading OpenImagesDataset Annotations")
         self.detections_ann = pd.read_csv(ann_file)
@@ -216,6 +217,7 @@ class OpenImagesDataset(torchvision.datasets.VisionDataset):
         target = target.clip_to_image(remove_empty=True)
         if self._transforms is not None:
             img, target = self._transforms(img, target)
+
         return img, target, idx
 
     def get_img_info(self, index):

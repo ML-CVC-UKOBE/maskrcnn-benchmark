@@ -3,7 +3,6 @@ import torch
 
 from .lr_scheduler import WarmupMultiStepLR, WarmupCosineAnnealingLR
 
-
 def make_optimizer(cfg, model):
     params = []
     for key, value in model.named_parameters():

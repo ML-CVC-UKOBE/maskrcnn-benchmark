@@ -121,6 +121,11 @@ def do_train(
             torch.save(model.state_dict(),
                        checkpointer.save_dir + "/weights_final.pth")
 
+        if iteration % 104687 == 0: # ONE EPOCH
+            checkpointer.save("model_{:07d}".format(iteration), **arguments)
+            import os
+            os.system('killall python3')
+
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))
     logger.info(

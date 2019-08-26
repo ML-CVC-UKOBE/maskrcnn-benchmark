@@ -76,8 +76,6 @@ def train(cfg, local_rank, distributed):
         start_iter=arguments["iteration"],
     )
 
-
-
     if cfg.SOLVER.USE_SCHEDULER_DATA_DEPENDENT:
         if cfg.SOLVER.SCHEDULER == "multi_step":
             # CHANGE LR SCHEDULER BASED ON NUM_ITERS RELATIVE TO DATASET SIZE
@@ -97,6 +95,7 @@ def train(cfg, local_rank, distributed):
             logger.info("##### NUM ITERS {} ####".format(num_iters))
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
+    synchronize()
 
     do_train(
         model,
@@ -182,6 +181,13 @@ def main():
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
+    cfg.freeze()
+
+    output_dir = cfg.OUTPUT_DIR
+    if output_dir:
+        mkdir(output_dir)
+
+    '''
     if args.local_rank == 0 and cfg.DATASETS.TRAIN[0] not in cfg.OUTPUT_DIR:
         cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR,
                                       os.path.splitext(os.path.basename(args.config_file))[0],
@@ -189,11 +195,7 @@ def main():
                                       datetime.datetime.now().__format__("%Y-%m-%d_%H:%M"))
 
         cfg.OUTPUT_DIR += cfg.OUTPUT_DIR_SUFFIX
-    cfg.freeze()
-
-    output_dir = cfg.OUTPUT_DIR
-    if output_dir:
-        mkdir(output_dir)
+    '''
 
     logger = setup_logger("maskrcnn_benchmark", output_dir, get_rank())
     logger.info("Using {} GPUs".format(num_gpus))
