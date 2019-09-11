@@ -65,8 +65,6 @@ def do_train(
         iteration = iteration + 1
         arguments["iteration"] = iteration
 
-        scheduler.step()
-
         images = images.to(device)
         targets = [target.to(device) for target in targets]
 
@@ -86,6 +84,7 @@ def do_train(
         #    scaled_losses.backward()
         losses.backward()
         optimizer.step()
+        scheduler.step()
 
         batch_time = time.time() - end
         end = time.time()
@@ -114,17 +113,19 @@ def do_train(
                     ram=psutil.virtual_memory().available / 1024.0 / 1024.0
                 )
             )
-        if iteration % checkpoint_period == 0:
-            checkpointer.save("model_{:07d}".format(iteration), **arguments)
-        if iteration == max_iter:
-            checkpointer.save("model_final", **arguments)
-            torch.save(model.state_dict(),
-                       checkpointer.save_dir + "/weights_final.pth")
+        if is_main_process():
+            if iteration % 104687 == 0 and iteration != max_iter: # ONE EPOCH
+                checkpointer.save("model_{:07d}".format(iteration), **arguments)
+                import os
+                os.system('killall python3')
 
-        if iteration % 104687 == 0: # ONE EPOCH
-            checkpointer.save("model_{:07d}".format(iteration), **arguments)
-            import os
-            os.system('killall python3')
+            if iteration % checkpoint_period == 0:
+                checkpointer.save("model_{:07d}".format(iteration), **arguments)
+            if iteration == max_iter:
+                checkpointer.save("model_final", **arguments)
+                torch.save(model.state_dict(),
+                        checkpointer.save_dir + "/weights_final.pth")
+
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))

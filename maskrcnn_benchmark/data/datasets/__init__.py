@@ -2,6 +2,6 @@
 from .coco import COCODataset
 from .voc import PascalVOCDataset
 from .concat_dataset import ConcatDataset
-from .oid import OpenImagesDataset
+from .oid import OpenImagesDataset, OpenImagesDatasetTest
 
-__all__ = ["COCODataset", "ConcatDataset", "PascalVOCDataset", "OpenImagesDataset"]
+__all__ = ["COCODataset", "ConcatDataset", "PascalVOCDataset", "OpenImagesDataset", "OpenImagesDatasetTest"]

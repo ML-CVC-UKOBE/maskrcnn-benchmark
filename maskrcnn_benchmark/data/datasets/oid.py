@@ -133,7 +133,8 @@ class OpenImagesDataset(torch.utils.data.Dataset):
                 self.image_annotations[image_id] = image_groundtruth
 
             self.ids = [*self.annotations.keys()]
-            # sort indices for reproducible results
+
+        # sort indices for reproducible results
         self.ids.sort()
         self.logger.info("Finishing Initialization..")
 
@@ -303,4 +304,63 @@ class OpenImagesDataset(torch.utils.data.Dataset):
         else:
             raise RuntimeError("UNKNOWN filter annotations")
 
+
+class OpenImagesDatasetTest(torch.utils.data.Dataset):
+
+    def __init__(self, classname_file, hierarchy_file, root, images_info_file, transforms=None):
+
+        super(OpenImagesDatasetTest, self).__init__()
+        self.root = root
+        self.logger = logging.getLogger("maskrcnn_benchmark.trainer")
+        self.logger.info("Reading OpenImagesDataset Annotations")
+
+        self.classname = pd.read_csv(classname_file, header=None, names=["LabelName", "Description"])
+        self.categories = collections.OrderedDict()
+
+        for cat in self.classname.values:
+            self.categories[cat[0]] = cat[1]
+
+        self.json_category_id_to_contiguous_id = {
+            v: i + 1 for i, v in enumerate(self.categories)
+        }
+
+        self.contiguous_category_id_to_json_id = {
+            v: k for k, v in self.json_category_id_to_contiguous_id.items()
+        }
+
+        with open(hierarchy_file) as json_file:
+            self.hierarchy = json.load(json_file)
+
+        with open(images_info_file) as json_file:
+            self.images_info = json.load(json_file)
+
+        self.ids = [img.replace(".jpg", "") for img in os.listdir(root)]
+        # sort indices for reproducible results
+        self.ids.sort()
+
+        self.id_to_img_map = {k: v for k, v in enumerate(self.ids)}
+        self.logger.info("Finishing Initialization..")
+
+        self._transforms = transforms
+        self.logger.info("Done. {} Images".format(self.__len__()))
+
+    def __len__(self):
+        return len(self.ids)
+
+    def __getitem__(self, idx):
+
+        image_id = self.ids[idx]
+        imagename = image_id + ".jpg"
+        img = Image.open(os.path.join(self.root, imagename)).convert('RGB')
+
+        target = BoxList(torch.randn(1, 4), img.size)
+        if self._transforms is not None:
+            img, target = self._transforms(img, target)
+
+        return img, target, idx
+
+    def get_img_info(self, index):
+        img_id = self.id_to_img_map[index]
+        img_data = self.images_info[img_id]
+        return img_data
 

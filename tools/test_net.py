@@ -80,7 +80,11 @@ def main():
     if cfg.MODEL.KEYPOINT_ON:
         iou_types = iou_types + ("keypoints",)
     output_folders = [None] * len(cfg.DATASETS.TEST)
-    dataset_names = cfg.DATASETS.TEST
+    if cfg.DATASETS.SUBMIT_ONLY:
+        dataset_names = cfg.DATASETS.SUBMIT
+    else:
+        dataset_names = cfg.DATASETS.TEST
+
     if cfg.OUTPUT_DIR:
         for idx, dataset_name in enumerate(dataset_names):
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference", dataset_name + cfg.OUTPUT_DIR_SUFFIX)
@@ -100,7 +104,6 @@ def main():
             output_folder=output_folder,
         )
         synchronize()
-
 
 if __name__ == "__main__":
     main()

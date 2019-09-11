@@ -89,6 +89,7 @@ def train(cfg, local_rank, distributed):
                                                                                             scheduler.milestones))
         elif cfg.SOLVER.SCHEDULER == "cosine":
             num_iters = data_loader.batch_sampler.num_iterations
+            scheduler.max_iters = num_iters
             logger = logging.getLogger("maskrcnn_benchmark.trainer")
             logger.info("##### COSINE SCHEDULER ####")
             logger.info("##### {} epochs ####".format(cfg.SOLVER.MAX_EPOCHS))

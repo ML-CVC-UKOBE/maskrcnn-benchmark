@@ -156,7 +156,10 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
         "maskrcnn_benchmark.config.paths_catalog", cfg.PATHS_CATALOG, True
     )
     DatasetCatalog = paths_catalog.DatasetCatalog
-    dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
+    if not cfg.DATASETS.SUBMIT_ONLY:
+        dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
+    else:
+        dataset_list = cfg.DATASETS.SUBMIT
 
     filter_subset = cfg.DATASETS.SUBSET if is_train else ()
     use_image_labels = cfg.DATASETS.USE_IMAGE_LABELS

@@ -25,6 +25,8 @@ def evaluate(dataset, predictions, output_folder, **kwargs):
         return voc_evaluation(**args)
     elif isinstance(dataset, datasets.OpenImagesDataset):
         return oid_evaluation(**args)
+    elif isinstance(dataset, datasets.OpenImagesDatasetTest):
+        return oid_evaluation(**args)
     else:
         dataset_name = dataset.__class__.__name__
         raise NotImplementedError("Unsupported dataset type {}.".format(dataset_name))

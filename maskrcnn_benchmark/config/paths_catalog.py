@@ -127,8 +127,7 @@ class DatasetCatalog(object):
         "oid_v5_challenge_train_expanded": {
             "img_dir": "oid/images/train",
             "ann_file": "oid/annotations/detection/challenge-2019-train-detection-bbox_expanded_new.csv",
-            "image_ann_file":
-                "oid/annotations/detection/challenge-2019-train-detection-human-imagelabels_expanded_new.csv",
+            "image_ann_file": "oid/annotations/detection/challenge-2019-train-detection-human-imagelabels_expanded_new.csv",
             "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
             "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
             "images_info_file": "oid/annotations/detection/challenge-2019-train-images_info.json",
@@ -136,16 +135,16 @@ class DatasetCatalog(object):
         "oid_v5_challenge_val_expanded": {
             "img_dir": "oid/images/val",
             "ann_file": "oid/annotations/detection/challenge-2019-validation-detection-bbox_expanded.csv",
-            "image_ann_file":
-                "oid/annotations/detection/challenge-2019-validation-detection-human-imagelabels_expanded.csv",
+            "image_ann_file": "oid/annotations/detection/challenge-2019-validation-detection-human-imagelabels_expanded.csv",
             "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
             "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
             "images_info_file": "oid/annotations/detection/challenge-2019-validation-images_info.json",
         },
         "oid_v5_challenge_test": {
-            "img_dir": "oid/images/test",
+            "img_dir": "oid/images/test_challenge",
             "hierarchy_file": "oid/annotations/detection/challenge-2019-label500-hierarchy.json",
             "classname_file": "oid/annotations/detection/challenge-2019-classes-description-500.csv",
+            "images_info_file": "oid/annotations/detection/challenge-2019-test_challenge-images_info.json",
         }
     }
 
@@ -173,7 +172,7 @@ class DatasetCatalog(object):
                 factory="PascalVOCDataset",
                 args=args,
             )
-        elif "oid_" in name:
+        elif "oid_" in name and "test" not in name:
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(
@@ -188,6 +187,21 @@ class DatasetCatalog(object):
                 factory="OpenImagesDataset",
                 args=args,
             )
+        elif "oid_" in name and "test" in name:
+
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                root=os.path.join(data_dir, attrs["img_dir"]),
+                hierarchy_file=os.path.join(data_dir, attrs["hierarchy_file"]),
+                classname_file=os.path.join(data_dir, attrs["classname_file"]),
+                images_info_file=os.path.join(data_dir, attrs["images_info_file"]),
+            )
+            return dict(
+                factory="OpenImagesDatasetTest",
+                args=args,
+            )
+
         raise RuntimeError("Dataset not available: {}".format(name))
 
 
