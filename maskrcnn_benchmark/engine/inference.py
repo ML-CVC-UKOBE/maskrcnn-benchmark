@@ -19,7 +19,11 @@ def compute_on_dataset(model, data_loader, device, timer=None):
     model.eval()
     results_dict = {}
     cpu_device = torch.device("cpu")
-    for _, batch in enumerate(tqdm(data_loader)):
+    logger = logging.getLogger("maskrcnn_benchmark.inference")
+    max_iters = len(data_loader)
+    for i, batch in enumerate(tqdm(data_loader)):
+
+        logger.info("iter: {}/{}".format(i, max_iters))
         images, targets, image_ids = batch
         with torch.no_grad():
             if timer:
