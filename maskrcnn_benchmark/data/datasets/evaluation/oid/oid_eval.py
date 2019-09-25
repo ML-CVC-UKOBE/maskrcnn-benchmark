@@ -155,6 +155,7 @@ def do_oid_evaluation(
 
         all_predictions_dict[image_id] = pd.DataFrame.from_dict(df)
 
+    all_predictions = pd.concat(all_predictions_dict)
     all_location_annotations = dataset.detections_ann
     all_label_annotations = dataset.image_ann
     all_label_annotations.rename(

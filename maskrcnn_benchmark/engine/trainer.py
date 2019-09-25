@@ -117,7 +117,7 @@ def do_train(
             if iteration % 104687 == 0 and iteration != max_iter: # ONE EPOCH
                 checkpointer.save("model_{:07d}".format(iteration), **arguments)
                 import os
-                #os.system('killall python3')
+                os.system('killall python3')
 
             if iteration % checkpoint_period == 0:
                 checkpointer.save("model_{:07d}".format(iteration), **arguments)

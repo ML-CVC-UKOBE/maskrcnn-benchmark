@@ -2,7 +2,6 @@
 # Set up custom environment before nearly anything else is imported
 # NOTE: this should be the first import (no not reorder)
 from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:skip
-
 import argparse
 import os
 
@@ -16,6 +15,7 @@ from maskrcnn_benchmark.utils.collect_env import collect_env_info
 from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
+
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Inference")
@@ -31,6 +31,7 @@ def main():
         help="The path to the checkpoint for test, default is the latest checkpoint.",
         default=None,
     )
+
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -39,6 +40,7 @@ def main():
     )
 
     args = parser.parse_args()
+
 
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     distributed = num_gpus > 1
