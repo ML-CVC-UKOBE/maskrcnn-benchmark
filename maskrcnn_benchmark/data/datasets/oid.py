@@ -275,7 +275,9 @@ class OpenImagesDataset(torch.utils.data.Dataset):
 
         self.logger.info("-> label distribution:")
         for i in range(int(params[0])):
-            self.logger.info("      topic:{} -> {} labels".format(i, np.sum(kmeans.labels_ == i)))
+            temp_labels_to_use = [str(temp_id_to_label[l]) for l in np.where(kmeans.labels_ == i)[0]]
+            n_images = pd1[pd1['LabelName'].isin(temp_labels_to_use)].shape[0]
+            self.logger.info("      topic:{} -> {} labels ({} images)".format(i, np.sum(kmeans.labels_ == i), n_images))
 
         labels_to_use = [str(temp_id_to_label[l]) for l in np.where(kmeans.labels_ == int(params[1]))[0]]
 
