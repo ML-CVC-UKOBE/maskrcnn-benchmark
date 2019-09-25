@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 import torch
 from tqdm import tqdm
@@ -98,9 +100,12 @@ def do_oid_evaluation(
     verbose = False
     expand_leaves_to_hierarchy = True
 
+    if 0:
+        show_precomputed_curves(dataset, output_folder)
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
-
+        # if i > 100:
+        #     break
         if verbose:
             img, gt, ii = dataset[i]
             show_boxes(
@@ -193,7 +198,10 @@ def do_oid_evaluation(
     dataset.logger.info("Processing EVALUATION")
     dataset.logger.info("")
     all_annotations_grouped = all_annotations.groupby("ImageID")
-    for groundtruth in tqdm(all_annotations_grouped):
+    for i, groundtruth in enumerate(tqdm(all_annotations_grouped)):
+        # if i > 100:
+        #     break
+
         image_id, image_groundtruth = groundtruth
         groundtruth_dictionary = utils.build_groundtruth_dictionary(
             image_groundtruth, class_label_map
@@ -231,6 +239,56 @@ def do_oid_evaluation(
     )
     with open(os.path.join(output_folder, file_output), "w") as fid:
         io_utils.write_csv(fid, metrics)
+
+    class ComplexEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, complex):
+                return [obj.real, obj.imag]
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return json.JSONEncoder.default(self, obj)
+
+    with open(os.path.join(output_folder, "curves.json"), "w") as fid:
+        data = {"precision": challenge_evaluator._evaluation.precisions_per_class,
+                "recall": challenge_evaluator._evaluation.recalls_per_class}
+        json.dump(data, fid, cls=ComplexEncoder)
+
+    show_precomputed_curves(dataset, output_folder)
+
+
+def show_precomputed_curves(dataset, output_folder):
+    if os.path.exists(os.path.join(output_folder, "curves.json")):
+        with open(os.path.join(output_folder, "curves.json"), "r") as fid:
+            data = json.load(fid)
+        with open(os.path.join(output_folder, "results_expanded.csv"), "r") as fid:
+            metrics = pd.read_csv(fid, names=["Category", "AP"])
+
+        metrics["Category"] = metrics["Category"].str.replace("OpenImagesDetectionChallenge_PerformanceByCategory/AP@0.5IOU/", "")
+        metrics["Name"] = metrics["Category"].apply(lambda x: dataset.categories[x] if x in dataset.categories else "")
+        import pylab
+        step_ap = 0.2
+
+        for c_ap in np.arange(0, 1, step_ap):
+            for cl in range(500):
+                category_id = dataset.contiguous_category_id_to_json_id[cl+1]
+                ap = metrics[metrics["Category"] == category_id]["AP"].iloc[0]
+                if isinstance(data["precision"][cl], list) and (c_ap <= ap <= c_ap + step_ap):
+                    pylab.plot(data["recall"][cl], data["precision"][cl])
+            pylab.show()
+
+        counts = dataset.detections_ann.groupby("LabelName")["ImageID"].count().reset_index().rename(columns={"ImageID": "n"})
+        step_counts = [0, 10, 100, 1000, 10000000]
+        for icount in range(len(step_counts)-1):
+            for cl in range(500):
+                category_id = dataset.contiguous_category_id_to_json_id[cl+1]
+                n_items = counts[counts["LabelName"] == category_id]
+                if n_items.shape[0] > 0:
+                    n = counts[counts["LabelName"] == category_id]["n"].iloc[0]
+                    if isinstance(data["precision"][cl], list) and (step_counts[icount] <= n <= step_counts[icount+1]):
+                        pylab.plot(data["recall"][cl], data["precision"][cl])
+            pylab.show()
+
+
 
 
 def show_boxes(images, proposals, title, labels_i_to_id, labels_id_to_name):
