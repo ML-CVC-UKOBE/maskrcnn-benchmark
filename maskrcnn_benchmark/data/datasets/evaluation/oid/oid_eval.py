@@ -104,8 +104,8 @@ def do_oid_evaluation(
         show_precomputed_curves(dataset, output_folder)
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
-        # if i > 100:
-        #     break
+        if i > 100:
+            break
         if verbose:
             img, gt, ii = dataset[i]
             show_boxes(
@@ -277,16 +277,24 @@ def show_precomputed_curves(dataset, output_folder):
             pylab.show()
 
         counts = dataset.detections_ann.groupby("LabelName")["ImageID"].count().reset_index().rename(columns={"ImageID": "n"})
-        step_counts = [0, 10, 100, 1000, 10000000]
+        step_counts = [0, 10, 50, 100, 1000, 10000000]
         for icount in range(len(step_counts)-1):
+            print("----")
             for cl in range(500):
                 category_id = dataset.contiguous_category_id_to_json_id[cl+1]
                 n_items = counts[counts["LabelName"] == category_id]
                 if n_items.shape[0] > 0:
                     n = counts[counts["LabelName"] == category_id]["n"].iloc[0]
+                    ap = metrics[metrics["Category"] == category_id]["AP"].iloc[0]
                     if isinstance(data["precision"][cl], list) and (step_counts[icount] <= n <= step_counts[icount+1]):
                         pylab.plot(data["recall"][cl], data["precision"][cl])
+                        print("{:<15} {:<30} {:<10} {:<10} {:.3f}".format(category_id,
+                                                                          dataset.categories[category_id],
+                                                                          n,
+                                                                          len(data["recall"][cl]),
+                                                                          ap))
             pylab.show()
+
 
 
 
