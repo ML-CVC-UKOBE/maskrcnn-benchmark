@@ -23,7 +23,7 @@ def compute_on_dataset(model, data_loader, device, timer=None):
     max_iters = len(data_loader)
     for i, batch in enumerate(tqdm(data_loader)):
 
-        logger.info("iter: {}/{}".format(i, max_iters))
+        # logger.info("iter: {}/{}".format(i, max_iters))
         images, targets, image_ids = batch
         with torch.no_grad():
             if timer:

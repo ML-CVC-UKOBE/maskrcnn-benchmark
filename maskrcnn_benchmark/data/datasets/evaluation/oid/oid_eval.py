@@ -98,14 +98,14 @@ def do_oid_evaluation(
 
     all_predictions_dict = {}
     verbose = False
-    expand_leaves_to_hierarchy = True
+    expand_leaves_to_hierarchy = False
 
-    if 0:
+    if 1:
         show_precomputed_curves(dataset, output_folder)
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
-        if i > 100:
-            break
+        #if i > 100:
+        # break
         if verbose:
             img, gt, ii = dataset[i]
             show_boxes(
