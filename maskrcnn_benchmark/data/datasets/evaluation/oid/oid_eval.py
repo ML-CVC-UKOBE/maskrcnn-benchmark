@@ -100,7 +100,7 @@ def do_oid_evaluation(
     verbose = False
     expand_leaves_to_hierarchy = False
 
-    if 1:
+    if 0:
         show_precomputed_curves(dataset, output_folder)
     # Prepare boxes for detection evaluation
     for i, pred in tqdm(enumerate(predictions), total=len(predictions)):
