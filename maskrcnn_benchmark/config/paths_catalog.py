@@ -15,6 +15,14 @@ class DatasetCatalog(object):
             "img_dir": "coco/val2017",
             "ann_file": "coco/annotations/instances_val2017.json"
         },
+        "lvis_2017_train": {
+            "img_dir": "lvis/train2017",
+            "ann_file": "lvis/annotations/lvis_v0.5_train.json"
+        },
+        "lvis_2017_val": {
+            "img_dir": "lvis/val2017",
+            "ann_file": "lvis/annotations/lvis_v0.5_val.json"
+        },
         "coco_2014_train": {
             "img_dir": "coco/train2014",
             "ann_file": "coco/annotations/instances_train2014.json"
@@ -128,6 +136,17 @@ class DatasetCatalog(object):
             )
             return dict(
                 factory="PascalVOCDataset",
+                args=args,
+            )
+        elif "lvis" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                root=os.path.join(data_dir, attrs["img_dir"]),
+                ann_file=os.path.join(data_dir, attrs["ann_file"]),
+            )
+            return dict(
+                factory="LvisDataset",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))

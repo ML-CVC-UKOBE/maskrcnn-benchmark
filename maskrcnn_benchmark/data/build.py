@@ -41,6 +41,8 @@ def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True):
         if data["factory"] == "PascalVOCDataset":
             args["use_difficult"] = not is_train
         args["transforms"] = transforms
+        if data["factory"] == "LvisDataset":
+            args["remove_images_without_annotations"] = is_train
         # make dataset from factory
         dataset = factory(**args)
         datasets.append(dataset)
